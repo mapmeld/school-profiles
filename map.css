@@ -28,6 +28,31 @@ html, body {
   left: auto;
   right: auto;
 }
-.autoComplete_result {
+.autoComplete_result, #school_name {
   text-transform: capitalize;
+}
+#extra {
+  display: none;
+}
+
+#school_rates {
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 80%;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+th, td {
+  text-align: left;
+  padding: 8px;
+}
+
+tr:nth-child(even){background-color: #f2f2f2}
+
+th {
+  background-color: #ff7a7a;
+  color: white;
 }
