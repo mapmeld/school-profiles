@@ -71,6 +71,7 @@ function initMap() {
             // show content about school
             document.getElementById('autoComplete').style.display = 'none';
             document.getElementById('extra').style.display = 'block';
+            document.getElementById('back').style.display = 'block';
             document.getElementById('school_name').innerText = selectSchool[0].toLowerCase();
             document.getElementById('school_rates').innerHTML = '';
             fetch('data/2017/' + selectSchool[1] + '.json').then(res => res.json()).then((perf) => {
@@ -124,4 +125,10 @@ function initMap() {
         }
       });
     });
+}
+
+function back() {
+  document.getElementById('back').style.display = 'none';
+  document.getElementById('extra').style.display = 'none';
+  document.getElementById('autoComplete').style.display = 'block';
 }

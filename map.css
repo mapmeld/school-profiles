@@ -41,6 +41,14 @@ html, body {
   font-size: 80%;
 }
 
+#back {
+  display: none;
+  position: absolute;
+  top: 19px;
+  left: 20px;
+  font-size: 15px;
+}
+
 table {
   border-collapse: collapse;
 }
