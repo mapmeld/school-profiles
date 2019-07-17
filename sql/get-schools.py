@@ -9,7 +9,7 @@ connection_string = argv[1]
 conn = psycopg2.connect(connection_string)
 cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-years = [2017]
+years = range(2010, 2017) # change to 2018 to include 2017
 school_levels = {
     'students_plus_dates': [
         '01','02','03','04','05','06','07','08','09'

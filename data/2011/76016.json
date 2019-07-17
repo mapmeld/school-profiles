@@ -1,0 +1,1 @@
+{"01": {"total": 10, "completed": 7}, "02": {"total": 12, "completed": 4}, "03": {"total": 11, "completed": 11}, "04": {"total": 12, "completed": 10, "moved": 1}, "05": {"total": 19, "completed": 18}, "06": {"total": 24, "completed": 17}, "07": {"total": 38, "completed": 19, "repeated": 1, "moved": 4}, "08": {"total": 27, "completed": 18, "repeated": 1}}
