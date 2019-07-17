@@ -64,3 +64,14 @@ th {
   background-color: #ff7a7a;
   color: white;
 }
+
+input[type="range"] {
+  display: inline-block;
+  margin-bottom: 15px;
+}
+
+#year {
+  display: inline-block;
+  margin-left: 10px;
+  vertical-align: top;
+}

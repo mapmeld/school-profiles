@@ -1,4 +1,7 @@
-var map;
+var map,
+    selectSchoolCode,
+    knownPerfs = {},
+    year = 2017;
 
 function initMap() {
   map = new google.maps.Map(document.getElementById('map'), {
@@ -73,51 +76,10 @@ function initMap() {
             document.getElementById('extra').style.display = 'block';
             document.getElementById('back').style.display = 'block';
             document.getElementById('school_name').innerText = selectSchool[0].toLowerCase();
-            document.getElementById('school_rates').innerHTML = '';
-            fetch('data/2017/' + selectSchool[1] + '.json').then(res => res.json()).then((perf) => {
-              let headers = document.createElement('tr'),
-                  grade = document.createElement('th'),
-                  students = document.createElement('th'),
-                  moved = document.createElement('th'),
-                  repeated = document.createElement('th'),
-                  completed = document.createElement('th');
-
-              grade.innerText = 'Grade';
-              students.innerText = 'Students';
-              moved.innerText = 'Moved';
-              repeated.innerText = 'Repeated';
-              completed.innerText = 'Completed';
-
-              headers.appendChild(grade);
-              headers.appendChild(students);
-              headers.appendChild(moved);
-              headers.appendChild(repeated);
-              headers.appendChild(completed);
-              document.getElementById('school_rates').appendChild(headers);
-
-              Object.keys(perf).forEach((grade) => {
-                let gradeRow = document.createElement('tr'),
-                  gradenum = document.createElement('td'),
-                  studentsnum = document.createElement('td'),
-                  movednum = document.createElement('td'),
-                  repeatednum = document.createElement('td'),
-                  completednum = document.createElement('td');
-
-                gradenum.innerText = grade;
-                studentsnum.innerText = perf[grade].total;
-                movednum.innerText = Math.round((perf[grade].moved || 0) / perf[grade].total * 100) + '%';
-                repeatednum.innerText = Math.round((perf[grade].repeated || 0) / perf[grade].total * 100) + '%';
-                completednum.style.fontWeight = 'bold';
-                completednum.innerText = Math.round((perf[grade].completed || 0) / perf[grade].total * 100) + '%';
-
-                gradeRow.appendChild(gradenum);
-                gradeRow.appendChild(studentsnum);
-                gradeRow.appendChild(movednum);
-                gradeRow.appendChild(repeatednum);
-                gradeRow.appendChild(completednum);
-
-                document.getElementById('school_rates').appendChild(gradeRow);
-              });
+            selectSchoolCode = selectSchool[1];
+            fetch('data/' + year + '/' + selectSchoolCode + '.json').then(res => res.json()).then((perf) => {
+              knownPerfs[year] = perf;
+              loadPerf(perf);
             });
           } else {
             alert('This school was not geocoded!');
@@ -127,8 +89,70 @@ function initMap() {
     });
 }
 
+function loadPerf (perf) {
+  document.getElementById('school_rates').innerHTML = '';
+
+  let headers = document.createElement('tr'),
+      grade = document.createElement('th'),
+      students = document.createElement('th'),
+      moved = document.createElement('th'),
+      repeated = document.createElement('th'),
+      completed = document.createElement('th');
+
+  grade.innerText = 'Grade';
+  students.innerText = 'Students';
+  moved.innerText = 'Moved';
+  repeated.innerText = 'Repeated';
+  completed.innerText = 'Completed';
+
+  headers.appendChild(grade);
+  headers.appendChild(students);
+  headers.appendChild(moved);
+  headers.appendChild(repeated);
+  headers.appendChild(completed);
+  document.getElementById('school_rates').appendChild(headers);
+
+  Object.keys(perf).forEach((grade) => {
+    let gradeRow = document.createElement('tr'),
+      gradenum = document.createElement('td'),
+      studentsnum = document.createElement('td'),
+      movednum = document.createElement('td'),
+      repeatednum = document.createElement('td'),
+      completednum = document.createElement('td');
+
+    gradenum.innerText = grade;
+    studentsnum.innerText = (perf[grade].total * 1).toLocaleString();
+    movednum.innerText = Math.round((perf[grade].moved || 0) / perf[grade].total * 100) + '%';
+    repeatednum.innerText = Math.round((perf[grade].repeated || 0) / perf[grade].total * 100) + '%';
+    completednum.style.fontWeight = 'bold';
+    completednum.innerText = Math.round((perf[grade].completed || 0) / perf[grade].total * 100) + '%';
+
+    gradeRow.appendChild(gradenum);
+    gradeRow.appendChild(studentsnum);
+    gradeRow.appendChild(movednum);
+    gradeRow.appendChild(repeatednum);
+    gradeRow.appendChild(completednum);
+
+    document.getElementById('school_rates').appendChild(gradeRow);
+  });
+}
+
 function back() {
+  knownPerfs = {};
   document.getElementById('back').style.display = 'none';
   document.getElementById('extra').style.display = 'none';
   document.getElementById('autoComplete').style.display = 'block';
+}
+
+function updateYear (e) {
+  year = e.target.value * 1;
+  document.getElementById('year').textValue = year;
+  if (knownPerfs[year]) {
+    loadPerf(knownPerfs[year]);
+  } else {
+    fetch('data/' + year + '/' + selectSchoolCode + '.json').then(res => res.json()).then((perf) => {
+      knownPerfs[year] = perf;
+      loadPerf(perf);
+    });
+  }
 }
