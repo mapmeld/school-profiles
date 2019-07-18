@@ -1,6 +1,9 @@
 var map,
     selectSchoolCode,
+    currentPointer,
+    school_points = {},
     knownPerfs = {},
+    moveLines = [],
     year = 2017;
 
 function initMap() {
@@ -22,7 +25,7 @@ function initMap() {
         lines.pop();
       }
 
-      let markerBlock = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAGElEQVQoU2NkSGH4z0AEYBxViC+UqB88ABKCDemh9/nQAAAAAElFTkSuQmCC';
+      let markerBlock = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAGElEQVQoU2NU6FJIYyACMI4qxBdK1A8eAGEXC+vPUODVAAAAAElFTkSuQmCC';
       let schools = lines.map(school => {
         school = school.split(',');
         let lat = school[1] * 1 || 0,
@@ -32,14 +35,43 @@ function initMap() {
             marker = null;
             // also remove accents, spaces, quotes
         if (lat && lng) {
+          school_point = new google.maps.LatLng(lat, lng);
+          school_points[id] = school_point;
           marker = new google.maps.Marker({
             map: map,
-            position: new google.maps.LatLng(lat, lng),
-            clickable: false,
+            position: school_point,
+            clickable: true,
             icon: {
               url: markerBlock,
               size: new google.maps.Size(7, 7)
             }
+          });
+          marker.addListener('click', () => {
+            document.getElementById('school_rates').innerHTML = '';
+            moveLines.forEach((line) => {
+              line.setMap(null);
+            });
+            moveLines = [];
+            selectSchoolCode = id;
+            document.getElementById('autoComplete').style.display = 'none';
+            document.getElementById('extra').style.display = 'block';
+            document.getElementById('back').style.display = 'block';
+            document.getElementById('school_name').innerText = name.toLowerCase();
+            document.getElementById('school_rates').innerHTML = '';
+
+            if (currentPointer) {
+              currentPointer.setMap(null);
+            }
+            currentPointer = new google.maps.Marker({
+              position: school_points[id],
+              map: map,
+              clickable: false
+            });
+
+            fetch('data/' + year + '/' + selectSchoolCode + '.json').then(res => res.json()).then((perf) => {
+              knownPerfs = { year: perf };
+              loadPerf(perf);
+            });
           });
         }
         return [name, id, marker];
@@ -64,18 +96,18 @@ function initMap() {
             map.setZoom(14);
 
             // replacing old square marker with traditional google maps marker
-            new google.maps.Marker({
+            currentPointer = new google.maps.Marker({
               position: marker.getPosition(),
               map: map,
               clickable: false
             });
-            marker.setMap(null);
 
             // show content about school
             document.getElementById('autoComplete').style.display = 'none';
             document.getElementById('extra').style.display = 'block';
             document.getElementById('back').style.display = 'block';
             document.getElementById('school_name').innerText = selectSchool[0].toLowerCase();
+            document.getElementById('school_rates').innerHTML = '';
             selectSchoolCode = selectSchool[1];
             fetch('data/' + year + '/' + selectSchoolCode + '.json').then(res => res.json()).then((perf) => {
               knownPerfs[year] = perf;
@@ -90,8 +122,6 @@ function initMap() {
 }
 
 function loadPerf (perf) {
-  document.getElementById('school_rates').innerHTML = '';
-
   let headers = document.createElement('tr'),
       grade = document.createElement('th'),
       students = document.createElement('th'),
@@ -134,6 +164,35 @@ function loadPerf (perf) {
     gradeRow.appendChild(completednum);
 
     document.getElementById('school_rates').appendChild(gradeRow);
+
+    fetch('data/' + year + '/move_' + selectSchoolCode + '.json').then(res => res.json()).then((moves) => {
+      let maxCount = 0;
+      Object.keys(moves).forEach((moveSchool) => {
+        maxCount = Math.max(maxCount, moves[moveSchool]);
+      });
+
+      Object.keys(moves).forEach((moveSchool) => {
+        let count = moves[moveSchool];
+        if (!school_points[moveSchool]) {
+          return;
+        }
+
+        moveLines.push(
+          new google.maps.Polyline({
+            map: map,
+            clickable: false,
+            geodesic: true,
+            path: [
+              school_points[selectSchoolCode],
+              school_points[moveSchool]
+            ],
+            strokeColor: 'darkblue',
+            strokeOpacity: (count == 1) ? 0.5 : 0.8,
+            strokeWeight: (maxCount > 4) ? (5 * (count / maxCount)) : maxCount
+          })
+        );
+      });
+    });
   });
 }
 
@@ -142,11 +201,24 @@ function back() {
   document.getElementById('back').style.display = 'none';
   document.getElementById('extra').style.display = 'none';
   document.getElementById('autoComplete').style.display = 'block';
+  currentPointer.setMap(null);
+  moveLines.forEach((line) => {
+    line.setMap(null);
+  });
+  moveLines = [];
 }
 
 function updateYear (e) {
   year = e.target.value * 1;
-  document.getElementById('year').textValue = year;
+  document.getElementById('year').innerText = year;
+
+  // clear table and move lines here
+  document.getElementById('school_rates').innerHTML = '';
+  moveLines.forEach((line) => {
+    line.setMap(null);
+  });
+  moveLines = [];
+
   if (knownPerfs[year]) {
     loadPerf(knownPerfs[year]);
   } else {
