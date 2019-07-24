@@ -5,7 +5,8 @@ var map,
     knownPerfs = {},
     moveLines = [],
     paesHistory = {},
-    year = 2017;
+    year = 2017,
+    codeLookup = {};
 
 function initMap() {
   map = new google.maps.Map(document.getElementById('map'), {
@@ -117,7 +118,6 @@ function initMap() {
     });
 
     // load school scores
-    let codeLookup = {};
     d3.csv('data/PAES.csv').then((paes) => {
       let subjects = ['CIENCIAS NATURALES', 'CIENCIAS SOCIALES', 'LENGUAJE Y LITERATUA', 'MATEMÁTICA', 'NOTA GLOBAL'];
       paes.forEach((record) => {
@@ -150,7 +150,23 @@ function initMap() {
           }
           codeLookup[dept][muni][name] = record.COD_CE;
         } else {
-          record.COD_CE = ((codeLookup[dept] || {})[muni] || {})[name];
+          if (!codeLookup[dept][muni]) {
+            //console.log(muni);
+            //console.log(Object.keys(codeLookup[dept]).sort());
+          } else if (!codeLookup[dept][muni][name]) {
+            let foundMatch = false;
+            Object.keys(codeLookup[dept][muni]).forEach((knownName) => {
+              if (!foundMatch && knownName.indexOf(name) > -1) {
+                name = knownName;
+                foundMatch = true;
+              }
+            });
+            if (!foundMatch && testyear === 2015) {
+              console.log(record['NOMBRE DEL CENTRO EDUCATIVO'] + ' / ' + name + ' in list:');
+              console.log(Object.keys(codeLookup[dept][muni]).sort());
+            }
+          }
+          record.COD_CE = (codeLookup[dept][muni] || {})[name];
         }
 
         if (!record.COD_CE) {
@@ -159,21 +175,26 @@ function initMap() {
           paesHistory[record.COD_CE][testyear] = (scores / matchSubjects).toFixed(1);
         }
       });
-      console.log(paesHistory);
+      //console.log(paesHistory);
     });
   });
 }
 
 function sanitize (placename) {
-  placename = placename.toLowerCase();
+  placename = placename.toLowerCase().trim();
+  if (placename.substring(0, 3) === 'ce ') {
+    placename = placename.substring(3);
+  }
   [['á', 'a'],['é', 'e'],['í', 'i'],['ó', 'o'],['ú', 'u'],['ñ', 'n'],
-    [',', ''],['(',''],[')',''],['"',''],['\'',''],
-  ['dr.', 'doctor'],['c.e.','centro escolar'],['caserio','cs'],['canton','ct'],
+    [',', ''],['(',''],[')',''],['complejo educativo',''],['"',''],['\'',''],
+  ['dr.', 'doctor'],['ciudad',''],['concepcion',''],['c.e.','centro escolar'],['caserio','cs'],['canton','ct'],
   ['caserio','crio.'],['cton','ct'],['i.n ','instituto'],
   ['.', ''],['c/', ''],['y','i'],['z','s'],['ce','se'],['ci','si'],
   ['nn','n'],['j','i'],['h',''],['ll','i'],['la ',' '],['v','b'],
   ['gi', 'ii'],['ge', 'ie'],['k','c'],['de ',' '],['del ', ' '],
   ['el ',' '],['los ', ' '],['las ', ' '],['san ',' '],[' ', ''],
+  ['ususlutan', 'usulutan'], ['iose', ''], ['seedu', ''], ['institutonasional', ''],
+  ['sentroescolar',''], ['compedu', ''], ['profesor', 'prof'], ['came', '']
     ].forEach(
     (accent) => {
       while (placename.indexOf(accent[0]) > -1) {
