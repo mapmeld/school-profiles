@@ -4,6 +4,7 @@ var map,
     school_points = {},
     knownPerfs = {},
     moveLines = [],
+    paesHistory = {},
     year = 2017;
 
 function initMap() {
@@ -15,110 +16,172 @@ function initMap() {
     //mapTypeId: 'satellite'
   });
 
-  fetch("school_points.csv")
-    .then(res => res.text())
-    .then((csv) => {
-      let lines = csv.split("\n");
-
-      // remove an extra blank line
-      if (lines[lines.length - 1].length < 4) {
-        lines.pop();
-      }
-
-      let markerBlock = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAGElEQVQoU2NU6FJIYyACMI4qxBdK1A8eAGEXC+vPUODVAAAAAElFTkSuQmCC';
-      let schools = lines.map(school => {
-        school = school.split(',');
-        let lat = school[1] * 1 || 0,
-            lng = school[0] * 1 || 0,
-            id = school[2],
-            name = school[3],
-            marker = null;
-            // also remove accents, spaces, quotes
-        if (lat && lng) {
-          school_point = new google.maps.LatLng(lat, lng);
-          school_points[id] = school_point;
-          marker = new google.maps.Marker({
-            map: map,
-            position: school_point,
-            clickable: true,
-            icon: {
-              url: markerBlock,
-              size: new google.maps.Size(7, 7)
-            }
-          });
-          marker.addListener('click', () => {
-            document.getElementById('school_rates').innerHTML = '';
-            moveLines.forEach((line) => {
-              line.setMap(null);
-            });
-            moveLines = [];
-            selectSchoolCode = id;
-            document.getElementById('autoComplete').style.display = 'none';
-            document.getElementById('extra').style.display = 'block';
-            document.getElementById('back').style.display = 'block';
-            document.getElementById('school_name').innerText = name.toLowerCase();
-            document.getElementById('school_rates').innerHTML = '';
-
-            if (currentPointer) {
-              currentPointer.setMap(null);
-            }
-            currentPointer = new google.maps.Marker({
-              position: school_points[id],
-              map: map,
-              clickable: false
-            });
-
-            fetch('data/' + year + '/' + selectSchoolCode + '.json').then(res => res.json()).then((perf) => {
-              knownPerfs = { year: perf };
-              loadPerf(perf);
-            });
-          });
-        }
-        return [name, id, marker];
-      });
-
-      // set up autocomplete
-      new autoComplete({
-        data: {
-          src: schools.map(school => school[0].toLowerCase())
-        },
-        placeHolder: 'Type a school name',
-        searchEngine: 'loose',
-        resultsList: {
-          render: true
-        },
-        onSelection: feedback => {
-          // console.log(feedback.selection.index);
-          let selectSchool = schools[feedback.selection.index];
-          let marker = selectSchool[2];
-          if (marker) {
-            map.setCenter(marker.getPosition());
-            map.setZoom(14);
-
-            // replacing old square marker with traditional google maps marker
-            currentPointer = new google.maps.Marker({
-              position: marker.getPosition(),
-              map: map,
-              clickable: false
-            });
-
-            // show content about school
-            document.getElementById('autoComplete').style.display = 'none';
-            document.getElementById('extra').style.display = 'block';
-            document.getElementById('back').style.display = 'block';
-            document.getElementById('school_name').innerText = selectSchool[0].toLowerCase();
-            document.getElementById('school_rates').innerHTML = '';
-            selectSchoolCode = selectSchool[1];
-            fetch('data/' + year + '/' + selectSchoolCode + '.json').then(res => res.json()).then((perf) => {
-              knownPerfs[year] = perf;
-              loadPerf(perf);
-            });
-          } else {
-            alert('This school was not geocoded!');
+  d3.csv("data/school_points.csv").then((lines) => {
+    let markerBlock = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAGElEQVQoU2NU6FJIYyACMI4qxBdK1A8eAGEXC+vPUODVAAAAAElFTkSuQmCC';
+    let schools = lines.map(school => {
+      let lat = school.lat * 1 || 0,
+          lng = school.lng * 1 || 0,
+          id = school.codigo,
+          name = school.nombre,
+          marker = null;
+          // also remove accents, spaces, quotes
+      if (lat && lng) {
+        school_point = new google.maps.LatLng(lat, lng);
+        school_points[id] = school_point;
+        marker = new google.maps.Marker({
+          map: map,
+          position: school_point,
+          clickable: true,
+          icon: {
+            url: markerBlock,
+            size: new google.maps.Size(7, 7)
           }
+        });
+        marker.addListener('click', () => {
+          d3.select('#school_rates').html('');
+          moveLines.forEach((line) => {
+            line.setMap(null);
+          });
+          moveLines = [];
+          selectSchoolCode = id;
+          document.getElementById('autoComplete').style.display = 'none';
+          document.getElementById('extra').style.display = 'block';
+          document.getElementById('back').style.display = 'block';
+          document.getElementById('school_name').innerText = name.toLowerCase();
+          document.getElementById('school_rates').innerHTML = '';
+
+          if (currentPointer) {
+            currentPointer.setMap(null);
+          }
+          currentPointer = new google.maps.Marker({
+            position: school_points[id],
+            map: map,
+            clickable: false
+          });
+
+          d3.json('data/' + year + '/' + selectSchoolCode + '.json').then((perf) => {
+            knownPerfs = { year: perf };
+            loadPerf(perf);
+          }).catch((err) => {
+            console.log('No record for this year');
+            d3.select('#school_rates').html('No record for this year');
+          });
+        });
+      }
+      return [name, id, marker];
+    });
+
+    // set up autocomplete
+    new autoComplete({
+      data: {
+        src: schools.map(school => school[0].toLowerCase())
+      },
+      placeHolder: 'Type a school name',
+      searchEngine: 'loose',
+      resultsList: {
+        render: true
+      },
+      onSelection: feedback => {
+        // console.log(feedback.selection.index);
+        let selectSchool = schools[feedback.selection.index];
+        let marker = selectSchool[2];
+        if (marker) {
+          map.setCenter(marker.getPosition());
+          map.setZoom(14);
+
+          // replacing old square marker with traditional google maps marker
+          currentPointer = new google.maps.Marker({
+            position: marker.getPosition(),
+            map: map,
+            clickable: false
+          });
+
+          // show content about school
+          document.getElementById('autoComplete').style.display = 'none';
+          document.getElementById('extra').style.display = 'block';
+          document.getElementById('back').style.display = 'block';
+          document.getElementById('school_name').innerText = selectSchool[0].toLowerCase();
+          document.getElementById('school_rates').innerHTML = '';
+          selectSchoolCode = selectSchool[1];
+          d3.json('data/' + year + '/' + selectSchoolCode + '.json').then((perf) => {
+            knownPerfs[year] = perf;
+            loadPerf(perf);
+          }).catch((err) => {
+            console.log('No record for this year');
+            d3.select('#school_rates').html('No record for this year');
+          });
+        } else {
+          alert('This school was not geocoded!');
+        }
+      }
+    });
+
+    // load school scores
+    let codeLookup = {};
+    d3.csv('data/PAES.csv').then((paes) => {
+      let subjects = ['CIENCIAS NATURALES', 'CIENCIAS SOCIALES', 'LENGUAJE Y LITERATUA', 'MATEMÁTICA', 'NOTA GLOBAL'];
+      paes.forEach((record) => {
+        let testyear = record['Año'].replace(',', '') * 1;
+        if (typeof paesHistory[record.COD_CE] === 'undefined') {
+          paesHistory[record.COD_CE] = {};
+        }
+
+        let scores = 0,
+            matchSubjects = 0;
+        subjects.forEach((subject) => {
+          if (record[subject]) {
+            scores += record[subject].replace(',', '') * 1;
+            matchSubjects++;
+          }
+          // if (isNaN(scores / matchSubjects)) {
+          //   console.log(record);
+          // }
+        });
+
+        let dept = sanitize(record.DEPARTAMENTO),
+            muni = sanitize(record.MUNICIPIO),
+            name = sanitize(record['NOMBRE DEL CENTRO EDUCATIVO']);
+        if (testyear === 2016) {
+          if (!codeLookup[dept]) {
+            codeLookup[dept] = {};
+          }
+          if (!codeLookup[dept][muni]) {
+            codeLookup[dept][muni] = {};
+          }
+          codeLookup[dept][muni][name] = record.COD_CE;
+        } else {
+          record.COD_CE = ((codeLookup[dept] || {})[muni] || {})[name];
+        }
+
+        if (!record.COD_CE) {
+          //console.log(record);
+        } else {
+          paesHistory[record.COD_CE][testyear] = (scores / matchSubjects).toFixed(1);
         }
       });
+      console.log(paesHistory);
     });
+  });
+}
+
+function sanitize (placename) {
+  placename = placename.toLowerCase();
+  [['á', 'a'],['é', 'e'],['í', 'i'],['ó', 'o'],['ú', 'u'],['ñ', 'n'],
+    [',', ''],['(',''],[')',''],['"',''],['\'',''],
+  ['dr.', 'doctor'],['c.e.','centro escolar'],['caserio','cs'],['canton','ct'],
+  ['caserio','crio.'],['cton','ct'],['i.n ','instituto'],
+  ['.', ''],['c/', ''],['y','i'],['z','s'],['ce','se'],['ci','si'],
+  ['nn','n'],['j','i'],['h',''],['ll','i'],['la ',' '],['v','b'],
+  ['gi', 'ii'],['ge', 'ie'],['k','c'],['de ',' '],['del ', ' '],
+  ['el ',' '],['los ', ' '],['las ', ' '],['san ',' '],[' ', ''],
+    ].forEach(
+    (accent) => {
+      while (placename.indexOf(accent[0]) > -1) {
+        placename = placename.replace(accent[0], accent[1]);
+      }
+    });
+  placename = placename.trim();
+  return placename;
 }
 
 function loadPerf (perf) {
@@ -165,7 +228,7 @@ function loadPerf (perf) {
 
     document.getElementById('school_rates').appendChild(gradeRow);
 
-    fetch('data/' + year + '/move_' + selectSchoolCode + '.json').then(res => res.json()).then((moves) => {
+    d3.json('data/' + year + '/move_' + selectSchoolCode + '.json').then((moves) => {
       let maxCount = 0;
       Object.keys(moves).forEach((moveSchool) => {
         maxCount = Math.max(maxCount, moves[moveSchool]);
@@ -192,8 +255,12 @@ function loadPerf (perf) {
           })
         );
       });
+    }).catch((err) => {
+      console.log('No move lines')
     });
   });
+
+  d3.select('#paes').text((paesHistory[selectSchoolCode] || {})[year] || 'no record')
 }
 
 function back() {
@@ -210,10 +277,10 @@ function back() {
 
 function updateYear (e) {
   year = e.target.value * 1;
-  document.getElementById('year').innerText = year;
+  d3.select('#year').text(year);
 
   // clear table and move lines here
-  document.getElementById('school_rates').innerHTML = '';
+  d3.select('#school_rates').html('');
   moveLines.forEach((line) => {
     line.setMap(null);
   });
@@ -222,9 +289,12 @@ function updateYear (e) {
   if (knownPerfs[year]) {
     loadPerf(knownPerfs[year]);
   } else {
-    fetch('data/' + year + '/' + selectSchoolCode + '.json').then(res => res.json()).then((perf) => {
+    d3.json('data/' + year + '/' + selectSchoolCode + '.json').then((perf) => {
       knownPerfs[year] = perf;
       loadPerf(perf);
+    }).catch((err) => {
+      console.log('No record for this year')
+      d3.select('#school_rates').html('No record for this year');
     });
   }
 }

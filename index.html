@@ -21,15 +21,17 @@
         <span style="display: inline-block; margin-right: 10px;">Year</span>
         <input id="year_select" type="range" min="2010" max="2017" value="2017" step="1" oninput="updateYear(event)"/>
         <span id="year">2017</span>
-
+        <br/>
+        PAES <span id="paes"></span>
+        <br/><br/>
         <table id="school_rates" border="0">
         </table>
       </div>
     </div>
     <div id="map">
     </div>
-
     <script src="//cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@6.0.0/dist/js/autoComplete.min.js"></script>
+    <script src="d3.v5.min.js"></script>
     <script src="school-map.js?r=2"></script>
     <script async defer
         src="//maps.googleapis.com/maps/api/js?key=AIzaSyCM5rmu5cgHp31_ykDbO-dqqCKGpfai_YM&callback=initMap">
