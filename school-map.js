@@ -9,7 +9,7 @@ var map,
     codeLookup = {};
 
 function initMap() {
-  map = new google.maps.Map(document.getElementById('map'), {
+  map = new google.maps.Map($('#map').get(0), {
     zoom: 8,
     center: {lat: 13.7003, lng: -89.175},
     streetViewControl: false,
@@ -45,11 +45,10 @@ function initMap() {
           });
           moveLines = [];
           selectSchoolCode = id;
-          document.getElementById('autoComplete').style.display = 'none';
-          document.getElementById('extra').style.display = 'block';
-          document.getElementById('back').style.display = 'block';
-          document.getElementById('school_name').innerText = name.toLowerCase();
-          document.getElementById('school_rates').innerHTML = '';
+          $('#autoComplete').hide();
+          $('#extra, #back').show();
+          $('#school_name').text(name.toLowerCase());
+          $('#school_rates').html('');
 
           if (currentPointer) {
             currentPointer.setMap(null);
@@ -98,11 +97,10 @@ function initMap() {
           });
 
           // show content about school
-          document.getElementById('autoComplete').style.display = 'none';
-          document.getElementById('extra').style.display = 'block';
-          document.getElementById('back').style.display = 'block';
-          document.getElementById('school_name').innerText = selectSchool[0].toLowerCase();
-          document.getElementById('school_rates').innerHTML = '';
+          $('#autoComplete').hide();
+          $('#extra, #back').show();
+          $('#school_name').text(selectSchool[0].toLowerCase());
+          $('#school_rates').html('');
           selectSchoolCode = selectSchool[1];
           d3.json('data/' + year + '/' + selectSchoolCode + '.json').then((perf) => {
             knownPerfs[year] = perf;
@@ -162,8 +160,8 @@ function initMap() {
               }
             });
             if (!foundMatch && testyear === 2015) {
-              console.log(record['NOMBRE DEL CENTRO EDUCATIVO'] + ' / ' + name + ' in list:');
-              console.log(Object.keys(codeLookup[dept][muni]).sort());
+              //console.log(record['NOMBRE DEL CENTRO EDUCATIVO'] + ' / ' + name + ' in list:');
+              //console.log(Object.keys(codeLookup[dept][muni]).sort());
             }
           }
           record.COD_CE = (codeLookup[dept][muni] || {})[name];
@@ -206,48 +204,37 @@ function sanitize (placename) {
 }
 
 function loadPerf (perf) {
-  let headers = document.createElement('tr'),
-      grade = document.createElement('th'),
-      students = document.createElement('th'),
-      moved = document.createElement('th'),
-      repeated = document.createElement('th'),
-      completed = document.createElement('th');
+  let headers = $('<tr>'),
+      grade = $('<th>').text('Grade'),
+      students = $('<th>').text('Students'),
+      moved = $('<th>').text('Moved'),
+      repeated = $('<th>').text('Repeated'),
+      completed = $('<th>').text('Completed');
 
-  grade.innerText = 'Grade';
-  students.innerText = 'Students';
-  moved.innerText = 'Moved';
-  repeated.innerText = 'Repeated';
-  completed.innerText = 'Completed';
-
-  headers.appendChild(grade);
-  headers.appendChild(students);
-  headers.appendChild(moved);
-  headers.appendChild(repeated);
-  headers.appendChild(completed);
-  document.getElementById('school_rates').appendChild(headers);
+  headers.append(grade);
+  headers.append(students);
+  headers.append(moved);
+  headers.append(repeated);
+  headers.append(completed);
+  $('#school_rates').html('').append(headers);
 
   Object.keys(perf).forEach((grade) => {
-    let gradeRow = document.createElement('tr'),
-      gradenum = document.createElement('td'),
-      studentsnum = document.createElement('td'),
-      movednum = document.createElement('td'),
-      repeatednum = document.createElement('td'),
-      completednum = document.createElement('td');
+    let gradeRow = $('<tr>'),
+      gradenum = $('<td>').text(grade),
+      studentsnum = $('<td>').text((perf[grade].total * 1).toLocaleString()),
+      movednum = $('<td>').text(Math.round((perf[grade].moved || 0) / perf[grade].total * 100) + '%'),
+      repeatednum = $('<td>').text(Math.round((perf[grade].repeated || 0) / perf[grade].total * 100) + '%'),
+      completednum = $('<td>').text(Math.round((perf[grade].completed || 0) / perf[grade].total * 100) + '%');
 
-    gradenum.innerText = grade;
-    studentsnum.innerText = (perf[grade].total * 1).toLocaleString();
-    movednum.innerText = Math.round((perf[grade].moved || 0) / perf[grade].total * 100) + '%';
-    repeatednum.innerText = Math.round((perf[grade].repeated || 0) / perf[grade].total * 100) + '%';
-    completednum.style.fontWeight = 'bold';
-    completednum.innerText = Math.round((perf[grade].completed || 0) / perf[grade].total * 100) + '%';
+    completednum.css({ fontWeight: 'bold' });
 
-    gradeRow.appendChild(gradenum);
-    gradeRow.appendChild(studentsnum);
-    gradeRow.appendChild(movednum);
-    gradeRow.appendChild(repeatednum);
-    gradeRow.appendChild(completednum);
+    gradeRow.append(gradenum);
+    gradeRow.append(studentsnum);
+    gradeRow.append(movednum);
+    gradeRow.append(repeatednum);
+    gradeRow.append(completednum);
 
-    document.getElementById('school_rates').appendChild(gradeRow);
+    $('#school_rates').append(gradeRow);
 
     d3.json('data/' + year + '/move_' + selectSchoolCode + '.json').then((moves) => {
       let maxCount = 0;
@@ -286,9 +273,8 @@ function loadPerf (perf) {
 
 function back() {
   knownPerfs = {};
-  document.getElementById('back').style.display = 'none';
-  document.getElementById('extra').style.display = 'none';
-  document.getElementById('autoComplete').style.display = 'block';
+  $('#back, #extra').hide();
+  $('#autoComplete').show();
   currentPointer.setMap(null);
   moveLines.forEach((line) => {
     line.setMap(null);
@@ -314,6 +300,7 @@ function updateYear (e) {
       knownPerfs[year] = perf;
       loadPerf(perf);
     }).catch((err) => {
+      console.log(err);
       console.log('No record for this year')
       d3.select('#school_rates').html('No record for this year');
     });
