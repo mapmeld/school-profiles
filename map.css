@@ -47,18 +47,20 @@ html, body {
 #back {
   display: none;
   position: absolute;
-  top: 69px;
+  top: 14px;
   left: 20px;
   font-size: 15px;
 }
 
 input[type="range"] {
   display: inline-block;
+  margin-top: 15px;
   margin-bottom: 15px;
 }
 
 #year {
   display: inline-block;
+  margin-top: 11px;
   margin-left: 10px;
   vertical-align: top;
 }
@@ -70,14 +72,12 @@ h3 {
   margin-bottom: -5px;
 }
 h4 {
-  font-size: 140%;
+  font-size: 120%;
+  margin-bottom: 10px;
 }
 .table td, .table th {
   padding: 0.4rem;
 }
-
-.nav-item {
-  padding-left: 15px;
-  padding-right: 15px;
-  border-right: 1px solid #ccc;
+#outcomes-tab, #programs-tab {
+  display: none;
 }
