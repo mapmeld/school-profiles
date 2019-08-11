@@ -22,6 +22,9 @@ html, body {
   overflow: hidden;
   font-family: sans-serif;
 }
+#autoComplete {
+  margin-top: 15px;
+}
 #autoComplete_results_list {
   height: auto;
   position: static;
@@ -44,25 +47,9 @@ html, body {
 #back {
   display: none;
   position: absolute;
-  top: 19px;
+  top: 69px;
   left: 20px;
   font-size: 15px;
-}
-
-table {
-  border-collapse: collapse;
-}
-
-th, td {
-  text-align: left;
-  padding: 8px;
-}
-
-tr:nth-child(even){background-color: #f2f2f2}
-
-th {
-  background-color: #ff7a7a;
-  color: white;
 }
 
 input[type="range"] {
@@ -74,4 +61,23 @@ input[type="range"] {
   display: inline-block;
   margin-left: 10px;
   vertical-align: top;
+}
+
+h3 {
+  font-size: 160%;
+  padding-top: 12px;
+  padding-bottom: 0;
+  margin-bottom: -5px;
+}
+h4 {
+  font-size: 140%;
+}
+.table td, .table th {
+  padding: 0.4rem;
+}
+
+.nav-item {
+  padding-left: 15px;
+  padding-right: 15px;
+  border-right: 1px solid #ccc;
 }

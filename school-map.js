@@ -39,7 +39,7 @@ function initMap() {
           }
         });
         marker.addListener('click', () => {
-          d3.select('#school_rates').html('');
+          d3.select('#school_rates thead, #school_rates tbody').html('');
           moveLines.forEach((line) => {
             line.setMap(null);
           });
@@ -48,7 +48,7 @@ function initMap() {
           $('#autoComplete').hide();
           $('#extra, #back').show();
           $('#school_name').text(name.toLowerCase());
-          $('#school_rates').html('');
+          $('#school_rates thead, #school_rates tbody').html('');
 
           if (currentPointer) {
             currentPointer.setMap(null);
@@ -63,8 +63,9 @@ function initMap() {
             knownPerfs = { year: perf };
             loadPerf(perf);
           }).catch((err) => {
+            console.log(err);
             console.log('No record for this year');
-            d3.select('#school_rates').html('No record for this year');
+            d3.select('#school_rates tbody').html('').text('No record for this year');
           });
         });
       }
@@ -100,14 +101,16 @@ function initMap() {
           $('#autoComplete').hide();
           $('#extra, #back').show();
           $('#school_name').text(selectSchool[0].toLowerCase());
-          $('#school_rates').html('');
+          $('#school_rates thead').html('');
+          $('#school_rates tbody').html('');
           selectSchoolCode = selectSchool[1];
           d3.json('data/' + year + '/' + selectSchoolCode + '.json').then((perf) => {
             knownPerfs[year] = perf;
             loadPerf(perf);
           }).catch((err) => {
+            console.log(err);
             console.log('No record for this year');
-            d3.select('#school_rates').html('No record for this year');
+            d3.select('#school_rates tbody').html('').text('No record for this year');
           });
         } else {
           alert('This school was not geocoded!');
@@ -211,12 +214,15 @@ function loadPerf (perf) {
       repeated = $('<th>').text('Repeated'),
       completed = $('<th>').text('Completed');
 
+  $('#school_rates thead').html('');
+  $('#school_rates tbody').html('');
+
   headers.append(grade);
   headers.append(students);
   headers.append(moved);
   headers.append(repeated);
   headers.append(completed);
-  $('#school_rates').html('').append(headers);
+  $('#school_rates thead').append(headers);
 
   Object.keys(perf).forEach((grade) => {
     let gradeRow = $('<tr>'),
@@ -224,9 +230,8 @@ function loadPerf (perf) {
       studentsnum = $('<td>').text((perf[grade].total * 1).toLocaleString()),
       movednum = $('<td>').text(Math.round((perf[grade].moved || 0) / perf[grade].total * 100) + '%'),
       repeatednum = $('<td>').text(Math.round((perf[grade].repeated || 0) / perf[grade].total * 100) + '%'),
-      completednum = $('<td>').text(Math.round((perf[grade].completed || 0) / perf[grade].total * 100) + '%');
-
-    completednum.css({ fontWeight: 'bold' });
+      completednum = $('<td>').text(Math.round((perf[grade].completed || 0) / perf[grade].total * 100) + '%')
+        .css({ fontWeight: 'bold' });
 
     gradeRow.append(gradenum);
     gradeRow.append(studentsnum);
@@ -234,7 +239,7 @@ function loadPerf (perf) {
     gradeRow.append(repeatednum);
     gradeRow.append(completednum);
 
-    $('#school_rates').append(gradeRow);
+    $('#school_rates tbody').append(gradeRow);
 
     d3.json('data/' + year + '/move_' + selectSchoolCode + '.json').then((moves) => {
       let maxCount = 0;
@@ -264,6 +269,7 @@ function loadPerf (perf) {
         );
       });
     }).catch((err) => {
+      console.log(err);
       console.log('No move lines')
     });
   });
@@ -287,7 +293,7 @@ function updateYear (e) {
   d3.select('#year').text(year);
 
   // clear table and move lines here
-  d3.select('#school_rates').html('');
+  d3.select('#school_rates thead, #school_rates tbody').html('');
   moveLines.forEach((line) => {
     line.setMap(null);
   });
@@ -302,7 +308,7 @@ function updateYear (e) {
     }).catch((err) => {
       console.log(err);
       console.log('No record for this year')
-      d3.select('#school_rates').html('No record for this year');
+      d3.select('#school_rates tbody').html('').text('No record for this year');
     });
   }
 }
