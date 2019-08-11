@@ -31,11 +31,11 @@
         <div id="browse-tab" class="tabpanel">
           <span style="display: inline-block; margin-right: 10px;">Year</span>
           <input id="year_select" type="range" min="2010" max="2017" value="2017" step="1" oninput="updateYear(event)"/>
-          <span id="year">2017</span>
+          <span class="year">2017</span>
           <br/>
-          PAES <span id="paes"></span>
+          PAES <span class="paes"></span>
           <br/><br/>
-          <table id="school_rates" class="table table-striped" border="0">
+          <table id="school_rates" class="table table-striped">
             <thead class="thead-dark">
             </thead>
             <tbody>
@@ -44,8 +44,23 @@
         </div>
 
         <div id="outcomes-tab" class="tabpanel">
-          TODO: retiros analysis
+          <span style="display: inline-block; margin-right: 10px;">Year</span>
+          <input id="outcome_year_select" type="range" min="2010" max="2018" value="2017" step="1" oninput="updateYear(event)"/>
+          <span class="year">2017</span>
+          <br/>
+          PAES <span class="paes"></span>
+          <br/><br/>
+          <table id="retiro_reasons" class="table table-striped">
+            <thead class="thead-dark">
+            </thead>
+            <tbody>
+
+            </tbody>
+          </table>
+
+          <!--
           TODO: explain moves
+          -->
         </div>
         <div id="programs-tab" class="tabpanel">
           TODO: Year-to-year change analysis of any interventions / programs at this school and in this community

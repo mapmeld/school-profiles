@@ -3,11 +3,37 @@ var map,
     currentPointer,
     school_points = {},
     knownPerfs = {},
+    knownOutcomes = {},
     moveLines = [],
     year = 2017,
     codeLookup = {},
     paesHistory = {},
     currentTab = 'browse';
+
+let reasonLookup = {
+  'A': 'Student agricultural work',
+  'B': 'Student housework',
+  'C': 'Student working',
+  'D': 'Student address changed',
+  'E': 'Moved to another school',
+  'F': 'Moved to EDUCAME',
+  'G': 'Left the country',
+  'H': 'Pregnancy',
+  'I': 'Economic difficulties',
+  'J': 'Parents withdrew from school',
+  'K': 'School is too far',
+  'L': 'Poor academic performance',
+  'M': 'Delinquency',
+  'N': 'Physical disability',
+  'O': 'Sickness',
+  'P': 'Accident',
+  'Q': 'Natural death',
+  'R': 'Death by murder',
+  'S': 'Death by accident',
+  'T': 'Forced displacement',
+  'U': 'Gang victim',
+  'V': 'Other causes'
+};
 
 function initMap() {
   map = new google.maps.Map($('#map').get(0), {
@@ -40,7 +66,8 @@ function initMap() {
           }
         });
         marker.addListener('click', () => {
-          $('#school_rates thead, #school_rates tbody').html('');
+          $('#school_rates thead').html('');
+          $('#school_rates tbody').html('');
           moveLines.forEach((line) => {
             line.setMap(null);
           });
@@ -49,7 +76,6 @@ function initMap() {
           $('#autoComplete').hide();
           $('#extra, #back').show();
           $('#school_name').text(name.toLowerCase());
-          $('#school_rates thead, #school_rates tbody').html('');
 
           if (currentPointer) {
             currentPointer.setMap(null);
@@ -61,9 +87,12 @@ function initMap() {
           });
 
           d3.json('data/' + year + '/' + selectSchoolCode + '.json').then((perf) => {
-            knownPerfs = { year: perf };
+            knownPerfs = {};
+            knownOutcomes = {};
+            knownPerfs[year] = perf;
             loadPerf(perf);
           }).catch((err) => {
+            loadPerf(null);
             console.log(err);
             console.log('No record for this year');
             $('#school_rates tbody').html('').text('No record for this year');
@@ -147,74 +176,90 @@ function sanitize (placename) {
 }
 
 function loadPerf (perf) {
-  let headers = $('<tr>'),
-      grade = $('<th>').text('Grade'),
-      students = $('<th>').text('Students'),
-      moved = $('<th>').text('Moved'),
-      repeated = $('<th>').text('Repeated'),
-      completed = $('<th>').text('Completed');
+  if (perf) {
 
-  $('#school_rates thead').html('');
-  $('#school_rates tbody').html('');
+    let headers = $('<tr>'),
+        grade = $('<th>').text('Grade'),
+        students = $('<th>').text('Students'),
+        moved = $('<th>').text('Moved'),
+        repeated = $('<th>').text('Repeated'),
+        completed = $('<th>').text('Completed');
 
-  headers.append(grade);
-  headers.append(students);
-  headers.append(moved);
-  headers.append(repeated);
-  headers.append(completed);
-  $('#school_rates thead').append(headers);
+    $('#school_rates thead').html('');
+    $('#school_rates tbody').html('');
 
-  Object.keys(perf).forEach((grade) => {
-    let gradeRow = $('<tr>'),
-      gradenum = $('<td>').text(grade),
-      studentsnum = $('<td>').text((perf[grade].total * 1).toLocaleString()),
-      movednum = $('<td>').text(Math.round((perf[grade].moved || 0) / perf[grade].total * 100) + '%'),
-      repeatednum = $('<td>').text(Math.round((perf[grade].repeated || 0) / perf[grade].total * 100) + '%'),
-      completednum = $('<td>').text(Math.round((perf[grade].completed || 0) / perf[grade].total * 100) + '%')
-        .css({ fontWeight: 'bold' });
+    headers.append(grade);
+    headers.append(students);
+    headers.append(moved);
+    headers.append(repeated);
+    headers.append(completed);
+    $('#school_rates thead').append(headers);
 
-    gradeRow.append(gradenum);
-    gradeRow.append(studentsnum);
-    gradeRow.append(movednum);
-    gradeRow.append(repeatednum);
-    gradeRow.append(completednum);
+    Object.keys(perf).forEach((grade) => {
+      let gradeRow = $('<tr>'),
+        gradenum = $('<td>').text(grade),
+        studentsnum = $('<td>').text((perf[grade].total * 1).toLocaleString()),
+        movednum = $('<td>').text(Math.round((perf[grade].moved || 0) / perf[grade].total * 100) + '%'),
+        repeatednum = $('<td>').text(Math.round((perf[grade].repeated || 0) / perf[grade].total * 100) + '%'),
+        completednum = $('<td>').text(Math.round((perf[grade].completed || 0) / perf[grade].total * 100) + '%')
+          .css({ fontWeight: 'bold' });
 
-    $('#school_rates tbody').append(gradeRow);
+      gradeRow.append(gradenum);
+      gradeRow.append(studentsnum);
+      gradeRow.append(movednum);
+      gradeRow.append(repeatednum);
+      gradeRow.append(completednum);
 
-    d3.json('data/' + year + '/move_' + selectSchoolCode + '.json').then((moves) => {
-      let maxCount = 0;
-      Object.keys(moves).forEach((moveSchool) => {
-        maxCount = Math.max(maxCount, moves[moveSchool]);
+      $('#school_rates tbody').append(gradeRow);
+
+      d3.json('data/' + year + '/move_' + selectSchoolCode + '.json').then((moves) => {
+        let maxCount = 0;
+        Object.keys(moves).forEach((moveSchool) => {
+          maxCount = Math.max(maxCount, moves[moveSchool]);
+        });
+
+        Object.keys(moves).forEach((moveSchool) => {
+          let count = moves[moveSchool];
+          if (!school_points[moveSchool]) {
+            return;
+          }
+
+          moveLines.push(
+            new google.maps.Polyline({
+              map: map,
+              clickable: false,
+              geodesic: true,
+              path: [
+                school_points[selectSchoolCode],
+                school_points[moveSchool]
+              ],
+              strokeColor: 'darkblue',
+              strokeOpacity: (count == 1) ? 0.5 : 0.8,
+              strokeWeight: (maxCount > 4) ? (5 * (count / maxCount)) : maxCount
+            })
+          );
+        });
+      }).catch((err) => {
+        console.log(err);
+        console.log('No move lines')
       });
+    });
+  }
 
-      Object.keys(moves).forEach((moveSchool) => {
-        let count = moves[moveSchool];
-        if (!school_points[moveSchool]) {
-          return;
-        }
-
-        moveLines.push(
-          new google.maps.Polyline({
-            map: map,
-            clickable: false,
-            geodesic: true,
-            path: [
-              school_points[selectSchoolCode],
-              school_points[moveSchool]
-            ],
-            strokeColor: 'darkblue',
-            strokeOpacity: (count == 1) ? 0.5 : 0.8,
-            strokeWeight: (maxCount > 4) ? (5 * (count / maxCount)) : maxCount
-          })
-        );
-      });
+  if (knownOutcomes[year]) {
+    loadRetiros(knownOutcomes[year]);
+  } else {
+    d3.json('data/' + year + '/retiro_' + selectSchoolCode + '.json').then((retiro) => {
+      knownOutcomes[year] = retiro;
+      loadRetiros(retiro);
     }).catch((err) => {
       console.log(err);
-      console.log('No move lines')
+      console.log('No record for this year');
+      $('#retiro_reasons tbody').html('').text('No record for this year');
     });
-  });
+  }
 
-  $('#paes').text((paesHistory[selectSchoolCode] || {})[year] || 'no record')
+  $('.paes').text((paesHistory[selectSchoolCode] || {})[year] || 'no record')
 }
 
 // load school scores
@@ -278,13 +323,13 @@ d3.csv('data/PAES.csv').then((paes) => {
   //console.log(paesHistory);
 });
 
-
 function updateYear (e) {
   year = e.target.value * 1;
-  $('#year').text(year);
+  $('.year').text(year);
 
   // clear table and move lines here
-  $('#school_rates thead, #school_rates tbody').html('');
+  $('#school_rates thead').html('');
+  $('#school_rates tbody').html('');
   moveLines.forEach((line) => {
     line.setMap(null);
   });
@@ -297,6 +342,7 @@ function updateYear (e) {
       knownPerfs[year] = perf;
       loadPerf(perf);
     }).catch((err) => {
+      loadPerf(null);
       console.log(err);
       console.log('No record for this year')
       $('#school_rates tbody').html('').text('No record for this year');
@@ -304,8 +350,43 @@ function updateYear (e) {
   }
 }
 
+function loadRetiros (outcomes) {
+  let headers = $('<tr>'),
+      reason = $('<th>').text('Reason'),
+      gender = $('<th>').text('Gender'),
+      count = $('<th>').text('Count');
+  $('#retiro_reasons thead').html('');
+  $('#retiro_reasons tbody').html('');
+
+  headers.append(reason);
+  headers.append(gender);
+  headers.append(count);
+  $('#retiro_reasons thead').append(headers);
+
+  Object.keys(outcomes).forEach((outcome) => {
+    let op = outcome.split('_');
+    if (op[0].trim().length) {
+      let reason = reasonLookup[op[0].trim().toUpperCase()],
+          gender = op[1].toUpperCase(),
+          count = outcomes[outcome];
+
+      let rRow = $('<tr>'),
+        rtd = $('<td>').text(reason),
+        gtd = $('<td>').text(gender),
+        ctd = $('<td>').text(count);
+
+      rRow.append(rtd);
+      rRow.append(gtd);
+      rRow.append(ctd);
+
+      $('#retiro_reasons tbody').append(rRow);
+    }
+  });
+}
+
 function back() {
   knownPerfs = {};
+  knownOutcomes = {};
   $('#back, #extra').hide();
   $('#autoComplete').show();
   currentPointer.setMap(null);
@@ -322,5 +403,6 @@ function setTab(tab) {
     $('.' + tab + '-tab').addClass('active');
     $('#' + tab + '-tab').show();
     currentTab = tab;
+    loadRetiros(null);
   }
 }
