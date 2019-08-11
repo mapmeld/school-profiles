@@ -81,3 +81,8 @@ h4 {
 #outcomes-tab, #programs-tab {
   display: none;
 }
+#retiro_wrapper {
+  max-height: 70%;
+  max-height: 70vh;
+  overflow-y: scroll;
+}
