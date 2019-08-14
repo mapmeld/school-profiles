@@ -8,6 +8,7 @@ var map,
     year = 2017,
     codeLookup = {},
     paesHistory = {},
+    markerList = [],
     currentTab = 'browse';
 
 let reasonLookup = {
@@ -65,6 +66,7 @@ function initMap() {
             size: new google.maps.Size(7, 7)
           }
         });
+        markerList.push(marker);
         marker.addListener('click', () => {
           $('#school_rates thead').html('');
           $('#school_rates tbody').html('');
@@ -101,6 +103,8 @@ function initMap() {
       }
       return [name, id, marker];
     });
+
+    new MarkerClusterer(map, markerList, {imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m', minimumClusterSize: 3, maxZoom: 14 });
 
     // set up autocomplete
     new autoComplete({
