@@ -52,8 +52,23 @@ function initMap() {
           lng = school.lng * 1 || 0,
           id = school.codigo,
           name = school.nombre,
+
+          dept_san = sanitize(school.dept),
+          muni_san = sanitize(school.muni),
+          name_san = sanitize(school.nombre),
+
           marker = null;
-          // also remove accents, spaces, quotes
+
+      if (!codeLookup[dept_san]) {
+        codeLookup[dept_san] = {};
+      }
+      if (!codeLookup[dept_san][muni_san]) {
+        codeLookup[dept_san][muni_san] = {};
+      }
+      if (!codeLookup[dept_san][muni_san][name_san]) {
+        codeLookup[dept_san][muni_san][name_san] = id;
+      }
+
       if (lat && lng) {
         school_point = new google.maps.LatLng(lat, lng);
         school_points[id] = school_point;
@@ -150,6 +165,65 @@ function initMap() {
           alert('This school was not geocoded!');
         }
       }
+    });
+
+
+    // load school scores
+    d3.csv('data/PAES.csv').then((paes) => {
+      let subjects = ['CIENCIAS NATURALES', 'CIENCIAS SOCIALES', 'LENGUAJE Y LITERATUA', 'MATEMÁTICA', 'NOTA GLOBAL'];
+      paes.forEach((record) => {
+        let testyear = record['Año'].replace(',', '') * 1;
+        if (typeof paesHistory[record.COD_CE] === 'undefined') {
+          paesHistory[record.COD_CE] = {};
+        }
+
+        let scores = 0,
+            matchSubjects = 0;
+        subjects.forEach((subject) => {
+          if (record[subject]) {
+            scores += record[subject].replace(',', '') * 1;
+            matchSubjects++;
+          }
+          // if (isNaN(scores / matchSubjects)) {
+          //   console.log(record);
+          // }
+        });
+
+        let dept = sanitize(record.DEPARTAMENTO),
+            muni = sanitize(record.MUNICIPIO),
+            name = sanitize(record['NOMBRE DEL CENTRO EDUCATIVO']);
+        if (!codeLookup[dept]) {
+          codeLookup[dept] = {};
+        }
+        if (!codeLookup[dept][muni]) {
+          codeLookup[dept][muni] = {};
+        }
+        if (!codeLookup[dept][muni][name]) {
+          if (record.COD_CE) {
+            codeLookup[dept][muni][name] = record.COD_CE;
+          } else {
+            let knownNames = Object.keys(codeLookup[dept][muni]);
+            for (let c = 0; c < knownNames.length; c++) {
+              if ((knownNames[c].indexOf(name) > -1) || (name.indexOf(knownNames[c]) > -1)) {
+                name = knownNames[c];
+                break;
+              }
+            }
+          }
+        }
+        record.COD_CE = codeLookup[dept][muni][name];
+
+        if (!record.COD_CE) {
+          //console.log(record);
+        } else {
+          //console.log(record);
+          if (!paesHistory[record.COD_CE]) {
+            paesHistory[record.COD_CE] = {};
+          }
+          paesHistory[record.COD_CE][testyear] = (scores / matchSubjects).toFixed(1);
+        }
+      });
+      //console.log(paesHistory);
     });
   });
 }
@@ -285,67 +359,6 @@ function loadPerf (perf) {
 
   $('.paes').text((paesHistory[selectSchoolCode] || {})[year] || 'no record')
 }
-
-// load school scores
-d3.csv('data/PAES.csv').then((paes) => {
-  let subjects = ['CIENCIAS NATURALES', 'CIENCIAS SOCIALES', 'LENGUAJE Y LITERATUA', 'MATEMÁTICA', 'NOTA GLOBAL'];
-  paes.forEach((record) => {
-    let testyear = record['Año'].replace(',', '') * 1;
-    if (typeof paesHistory[record.COD_CE] === 'undefined') {
-      paesHistory[record.COD_CE] = {};
-    }
-
-    let scores = 0,
-        matchSubjects = 0;
-    subjects.forEach((subject) => {
-      if (record[subject]) {
-        scores += record[subject].replace(',', '') * 1;
-        matchSubjects++;
-      }
-      // if (isNaN(scores / matchSubjects)) {
-      //   console.log(record);
-      // }
-    });
-
-    let dept = sanitize(record.DEPARTAMENTO),
-        muni = sanitize(record.MUNICIPIO),
-        name = sanitize(record['NOMBRE DEL CENTRO EDUCATIVO']);
-    if (testyear === 2016) {
-      if (!codeLookup[dept]) {
-        codeLookup[dept] = {};
-      }
-      if (!codeLookup[dept][muni]) {
-        codeLookup[dept][muni] = {};
-      }
-      codeLookup[dept][muni][name] = record.COD_CE;
-    } else {
-      if (!codeLookup[dept][muni]) {
-        //console.log(muni);
-        //console.log(Object.keys(codeLookup[dept]).sort());
-      } else if (!codeLookup[dept][muni][name]) {
-        let foundMatch = false;
-        Object.keys(codeLookup[dept][muni]).forEach((knownName) => {
-          if (!foundMatch && knownName.indexOf(name) > -1) {
-            name = knownName;
-            foundMatch = true;
-          }
-        });
-        if (!foundMatch && testyear === 2015) {
-          //console.log(record['NOMBRE DEL CENTRO EDUCATIVO'] + ' / ' + name + ' in list:');
-          //console.log(Object.keys(codeLookup[dept][muni]).sort());
-        }
-      }
-      record.COD_CE = (codeLookup[dept][muni] || {})[name];
-    }
-
-    if (!record.COD_CE) {
-      //console.log(record);
-    } else {
-      paesHistory[record.COD_CE][testyear] = (scores / matchSubjects).toFixed(1);
-    }
-  });
-  //console.log(paesHistory);
-});
 
 function updateYear (e) {
   year = e.target.value * 1;
