@@ -86,3 +86,6 @@ h4 {
   max-height: 70vh;
   overflow-y: scroll;
 }
+.gm-style > div > div > div > div > div {
+  background-repeat-y: no-repeat;
+}

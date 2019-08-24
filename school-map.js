@@ -46,6 +46,53 @@ function initMap() {
     //mapTypeId: 'satellite'
   });
 
+  let styleFunc = (layer) => {
+    return {
+      clickable: (map.getZoom() < 14 && layer.getProperty('TYPE_1') !== 'Departamento'),
+      fillOpacity: ((map.getZoom() > 14 || layer.getProperty('TYPE_1') === 'Departamento') ? 0 : 0.15),
+      strokeWeight: ((layer.getProperty('TYPE_1') === 'Departamento') ? 5 : 1),
+      fillColor: '#00f',
+      strokeOpacity: 0.5
+    };
+  };
+  map.data.setStyle(styleFunc);
+  d3.json('data/dept.topojson').then((dept) => {
+    let deptgj = topojson.feature(dept, dept.objects.departamentos);
+    map.data.addGeoJson(deptgj);
+
+    d3.json('data/muni.topojson').then((muni) => {
+      let munigj = topojson.feature(muni, muni.objects.municipios);
+      munigj.features.forEach((feature) => {
+        let minx = 180,
+            maxx = -180,
+            miny = 90,
+            maxy = -90;
+        feature.geometry.coordinates.forEach((shape) => {
+          shape.forEach((ring) => {
+            ring.forEach((point) => {
+              minx = Math.min(minx, point[0]);
+              maxx = Math.max(maxx, point[0]);
+              miny = Math.min(miny, point[1]);
+              maxy = Math.max(maxy, point[1]);
+            });
+          });
+        });
+        feature.properties.bounds = [minx, maxx, miny, maxy];
+      });
+      map.data.addGeoJson(munigj);
+    });
+  });
+  map.data.addListener('click', (e) => {
+    let b = e.feature.getProperty('bounds');
+    map.fitBounds(new google.maps.LatLngBounds(
+      new google.maps.LatLng(b[2], b[0]),
+      new google.maps.LatLng(b[3], b[1])
+    ));
+  });
+  map.addListener('zoom_changed', (e) => {
+    map.data.setStyle(styleFunc);
+  });
+
   // load all of the school names and positions
   d3.csv("data/school_points.csv").then((lines) => {
     // dark green square, could be replaced with a URL to any image
@@ -135,7 +182,7 @@ function initMap() {
 
     // combine markers into clusters while you are zoomed out
     new MarkerClusterer(map, markerList, {
-      imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m',
+      imagePath: 'lib/cluster',
       minimumClusterSize: 3,
       maxZoom: 14
     });
