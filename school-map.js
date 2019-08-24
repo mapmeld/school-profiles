@@ -342,6 +342,136 @@ function showPercent (pr) {
   }
 }
 
+function showStudentFlow (grade) {
+  let hostname = (window.location.hostname === 'localhost') ? 'http://localhost:5000' : 'https://gis.georeactor.com/students';
+  d3.json(hostname + '/track?year=' + year + '&school=' + selectSchoolCode + '&grade=' + grade).then((records) => {
+    let lastStudentRecord = null,
+        lastStudentNode = null,
+        maxLinkSize = 1,
+        links = [],
+        knownNodes = [
+          [year, selectSchoolCode, grade].join('_')
+        ],
+        nodes = [
+          { name: [year, selectSchoolCode, grade].join('_') }
+        ];
+
+    records.forEach((record) => {
+      let addedToOldLink = false;
+      let nextStudentNode = [
+        record[1],
+        (record[2] === selectSchoolCode) ? selectSchoolCode : 'Other',
+        record[3].split(' ')[0]
+      ].join('_');
+      if (record[0] === lastStudentRecord) {
+        if (knownNodes.indexOf(nextStudentNode) === -1) {
+          nodes.push({ name: nextStudentNode });
+          knownNodes.push(nextStudentNode);
+        } else {
+          links.forEach((link) => {
+            if (!addedToOldLink
+                && link.source === knownNodes.indexOf(lastStudentNode)
+                && link.target === knownNodes.indexOf(nextStudentNode)) {
+              addedToOldLink = true;
+              link.value++;
+              maxLinkSize = Math.max(maxLinkSize, link.value);
+            }
+          });
+        }
+        if (!addedToOldLink) {
+          links.push({
+            source: knownNodes.indexOf(lastStudentNode),
+            target: knownNodes.indexOf(nextStudentNode),
+            value: 1
+          });
+        }
+        lastStudentNode = nextStudentNode;
+      } else {
+        lastStudentRecord = record[0];
+        lastStudentNode = nextStudentNode;
+        if (knownNodes.indexOf(lastStudentNode) === -1) {
+          nodes.push({ name: lastStudentNode });
+          knownNodes.push(lastStudentNode);
+        } else {
+          links.forEach((link) => {
+            if (!addedToOldLink
+                && link.source === 0
+                && link.target === knownNodes.indexOf(lastStudentNode)) {
+              addedToOldLink = true;
+              link.value++;
+              maxLinkSize = Math.max(maxLinkSize, link.value);
+            }
+          });
+        }
+        if (!addedToOldLink) {
+          links.push({
+            source: 0,
+            target: knownNodes.indexOf(lastStudentNode),
+            value: 1
+          });
+        }
+      }
+    });
+    // console.log(links);
+
+    $('#flow-modal .modal-body').html('');
+    let svg = d3.select("#flow-modal .modal-body").append("svg")
+      .attr("width", 650)
+      .attr("height", 500)
+      .append("g");
+
+    let sankey = d3.sankey()
+      .nodeWidth(15)
+      .nodePadding(10)
+      .size([650, 450]);
+
+    sankey({ nodes: nodes, links: links });
+
+    svg.append("g")
+    .selectAll("rect")
+    .data(nodes)
+    .join("rect")
+      .attr("fill", "#aaa")
+      .attr("x", d => d.x0)
+      .attr("y", d => d.y0)
+      .attr("height", d => d.y1 - d.y0)
+      .attr("width", d => d.x1 - d.x0);
+
+    svg.append("g")
+        .attr("fill", "none")
+      .selectAll("g")
+      .data(links)
+      .join("path")
+        .attr("d", d3.sankeyLinkHorizontal())
+        .attr("stroke", "#00f")
+        .attr("stroke-width", d => Math.round(d.value / maxLinkSize * 50))
+        .style("mix-blend-mode", "multiply");
+
+  svg.append("g")
+      .style("font", "10px sans-serif")
+    .selectAll("text")
+    .data(nodes)
+    .join("text")
+      .attr("x", d => d.x0 < 150 ? d.x1 + 6 : d.x0 - 6)
+      .attr("y", d => (d.y1 + d.y0) / 2)
+      .attr("writing-mode", "tb")
+      .attr("text-anchor", "middle")
+      .text((d) => {
+        let name = d.name.split('_');
+        let year = name[0],
+            school = name[1],
+            grade = name[2] * 1;
+        if (school === selectSchoolCode) {
+          return year + "\nGrade " + grade;
+        } else {
+          return year + "\nGrade " + grade + "\nat " + school;
+        }
+      });
+
+    $('#flow-modal').modal({ show: true });
+  });
+}
+
 function loadPerf (perf) {
   $('#predict_6').text(showPercent(original_6[selectSchoolCode]));
   $('#predict_1b').text(showPercent(original_1b[selectSchoolCode]));
@@ -379,7 +509,7 @@ function loadPerf (perf) {
 
       let gradeLink = $('<button>').text(grade);
       gradeLink.on('click', (e) => {
-        console.log(e);
+        showStudentFlow(grade);
       });
       gradenum.append(gradeLink);
       gradeRow.append(gradenum);

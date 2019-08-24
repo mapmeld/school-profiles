@@ -86,6 +86,10 @@ h4 {
   max-height: 70vh;
   overflow-y: scroll;
 }
+
+/* all-blue clusters */
 .gm-style > div > div > div > div > div {
   background-repeat-y: no-repeat;
 }
+
+/* d3 flow chart */
