@@ -48,8 +48,8 @@ function initMap() {
 
   let styleFunc = (layer) => {
     return {
-      clickable: (map.getZoom() < 14 && layer.getProperty('TYPE_1') !== 'Departamento'),
-      fillOpacity: ((map.getZoom() > 14 || layer.getProperty('TYPE_1') === 'Departamento') ? 0 : 0.15),
+      clickable: (map.getZoom() < 12 && layer.getProperty('TYPE_1') !== 'Departamento'),
+      fillOpacity: 0, //((map.getZoom() > 12 || layer.getProperty('TYPE_1') === 'Departamento') ? 0 : 0.15),
       strokeWeight: ((layer.getProperty('TYPE_1') === 'Departamento') ? 5 : 1),
       fillColor: '#00f',
       strokeOpacity: 0.5
@@ -332,7 +332,11 @@ function sanitize (placename) {
 function showPercent (pr) {
   // format a percentage or write N/A for unavailable/undefined
   if (typeof pr !== 'undefined') {
-    return (Math.round(pr) / 10) + '%';
+    if (isNaN(pr * 1)) {
+      return '0%';
+    } else {
+      return (Math.round(pr) / 10) + '%';
+    }
   } else {
     return 'N/A';
   }
@@ -366,13 +370,18 @@ function loadPerf (perf) {
 
     Object.keys(perf).forEach((grade) => {
       let gradeRow = $('<tr>'),
-        gradenum = $('<td>').text(grade),
+        gradenum = $('<td>'),
         studentsnum = $('<td>').text((perf[grade].total * 1).toLocaleString()),
         movednum = $('<td>').text(Math.round((perf[grade].moved || 0) / perf[grade].total * 100) + '%'),
         repeatednum = $('<td>').text(Math.round((perf[grade].repeated || 0) / perf[grade].total * 100) + '%'),
         completednum = $('<td>').text(Math.round((perf[grade].completed || 0) / perf[grade].total * 100) + '%')
           .css({ fontWeight: 'bold' });
 
+      let gradeLink = $('<button>').text(grade);
+      gradeLink.on('click', (e) => {
+        console.log(e);
+      });
+      gradenum.append(gradeLink);
       gradeRow.append(gradenum);
       gradeRow.append(studentsnum);
       gradeRow.append(movednum);
@@ -445,6 +454,8 @@ function loadPerf (perf) {
 function updateYear (e) {
   year = e.target.value * 1;
   $('.year').text(year);
+  $('#year_select').val(year);
+  $('#outcome_year_select').val(year);
 
   // clear table and school-to-school move lines
   $('#school_rates thead').html('');
@@ -532,7 +543,7 @@ function setTab(tab) {
     $('.' + tab + '-tab').addClass('active');
     $('#' + tab + '-tab').show();
     currentTab = tab;
-    loadRetiros(null);
+    //loadRetiros(null);
   }
 }
 
