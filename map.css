@@ -92,4 +92,6 @@ h4 {
   background-repeat-y: no-repeat;
 }
 
-/* d3 flow chart */
+select {
+  cursor: pointer;
+}

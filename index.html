@@ -9,8 +9,32 @@
   </head>
   <body>
     <div id="search">
-      <h3>Schools Search</h3>
-      <input id="autoComplete" type="search" class="autocomplete"/>
+      <h3>El Salvador Schools</h3>
+      <div id="initial">
+        <br/>
+        <h4>Schools Search</h4>
+        <input id="autoComplete" type="search" class="autocomplete"/>
+
+        <br/><br/>
+        <div id="muni_view">
+          <h4>Municipios View</h4>
+          Viewing retention rate (%) in 2016-17:
+          <br/><br/>
+          <select id="muni_grade">
+            <option value="all">All Grades</option>
+            <option value="01">Grade 1 > 2</option>
+            <option value="02">Grade 2 > 3</option>
+            <option value="03">Grade 3 > 4</option>
+            <option value="04">Grade 4 > 5</option>
+            <option value="05">Grade 5 > 6</option>
+            <option value="06">Grade 6 > 7</option>
+            <option value="07">Grade 7 > 8</option>
+            <option value="08">Grade 8 > 9</option>
+            <option value="1B">Grade 1B > 2B</option>
+          </select>
+        </div>
+      </div>
+
       <div id="extra">
         <hr/>
         <button id="back" onClick="back()">&larr;</button>

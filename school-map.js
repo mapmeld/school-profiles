@@ -39,29 +39,162 @@ let reasonLookup = {
 
 function initMap() {
   map = new google.maps.Map($('#map').get(0), {
-    zoom: 8,
-    center: {lat: 13.7003, lng: -89.175},
+    zoom: 9,
+    center: {lat: 13.7003, lng: -88.928},
     streetViewControl: false,
-    fullscreenControl: false
+    fullscreenControl: false,
+    styles: [
+      {
+        "featureType": "administrative.land_parcel",
+        "stylers": [
+          {
+            "visibility": "off"
+          }
+        ]
+      },
+      {
+        "featureType": "administrative.neighborhood",
+        "stylers": [
+          {
+            "visibility": "off"
+          }
+        ]
+      },
+      {
+        "featureType": "landscape.natural",
+        "elementType": "geometry.fill",
+        "stylers": [
+          {
+            "color": "#f8f6f6"
+          },
+          {
+            "visibility": "on"
+          }
+        ]
+      },
+      {
+        "featureType": "landscape.natural",
+        "elementType": "labels.icon",
+        "stylers": [
+          {
+            "visibility": "off"
+          }
+        ]
+      },
+      {
+        "featureType": "poi",
+        "elementType": "labels.text",
+        "stylers": [
+          {
+            "visibility": "off"
+          }
+        ]
+      },
+      {
+        "featureType": "poi.business",
+        "stylers": [
+          {
+            "visibility": "off"
+          }
+        ]
+      },
+      {
+        "featureType": "road",
+        "elementType": "labels",
+        "stylers": [
+          {
+            "visibility": "off"
+          }
+        ]
+      },
+      {
+        "featureType": "road",
+        "elementType": "labels.icon",
+        "stylers": [
+          {
+            "visibility": "off"
+          }
+        ]
+      },
+      {
+        "featureType": "road.highway",
+        "elementType": "geometry.stroke",
+        "stylers": [
+          {
+            "visibility": "simplified"
+          }
+        ]
+      },
+      {
+        "featureType": "transit",
+        "stylers": [
+          {
+            "visibility": "on"
+          }
+        ]
+      },
+      {
+        "featureType": "water",
+        "elementType": "labels.text",
+        "stylers": [
+          {
+            "visibility": "off"
+          }
+        ]
+      }
+    ]
     //mapTypeId: 'satellite'
   });
 
   let styleFunc = (layer) => {
+    let selectGrade = -1;
+    if (layer.getProperty('TYPE_1') !== 'Departamento') {
+      let rates = layer.getProperty('rates');
+      selectGrade = $('#muni_grade').val();
+      if (Object.keys(rates).length === 0) {
+        selectGrade = -1;
+      } else if (selectGrade === 'all') {
+        let sum = 0, totalGrades = 0;
+        Object.keys(rates).forEach((grade) => {
+          if (rates[grade][0] > 0) {
+            // totalIn += rates[grade][0];
+            // totalOut += rates[grade][1];
+            sum += rates[grade][1] / rates[grade][0];
+            totalGrades++;
+          }
+        });
+        selectGrade = sum / totalGrades;
+      } else {
+        if (rates[selectGrade][0]) {
+          selectGrade = rates[selectGrade][1] / rates[selectGrade][0];
+        } else {
+          selectGrade = -1;
+        }
+      }
+    }
+    let fillColor = '#fff';
+    if (selectGrade > 0) {
+      let level = Math.round((selectGrade - 0.66) * 200 / 0.33) + 50;
+      fillColor = 'rgb(0, ' + level + ', 0)';
+    }
     return {
       clickable: (map.getZoom() < 12 && layer.getProperty('TYPE_1') !== 'Departamento'),
-      fillOpacity: 0, //((map.getZoom() > 12 || layer.getProperty('TYPE_1') === 'Departamento') ? 0 : 0.15),
+      fillOpacity: ((map.getZoom() > 12 || layer.getProperty('TYPE_1') === 'Departamento') ? 0 : 0.3),
       strokeWeight: ((layer.getProperty('TYPE_1') === 'Departamento') ? 5 : 1),
-      fillColor: '#00f',
+      fillColor: fillColor,
       strokeOpacity: 0.5
     };
   };
   map.data.setStyle(styleFunc);
+  $('#muni_grade').on('change', () => {
+    map.data.setStyle(styleFunc);
+  });
   d3.json('data/dept.topojson').then((dept) => {
     let deptgj = topojson.feature(dept, dept.objects.departamentos);
     map.data.addGeoJson(deptgj);
 
-    d3.json('data/muni.topojson').then((muni) => {
-      let munigj = topojson.feature(muni, muni.objects.municipios);
+    d3.json('data/muni2.topojson').then((muni) => {
+      let munigj = topojson.feature(muni, muni.objects.export);
       munigj.features.forEach((feature) => {
         let minx = 180,
             maxx = -180,
@@ -89,8 +222,23 @@ function initMap() {
       new google.maps.LatLng(b[3], b[1])
     ));
   });
+
+  let lastZoom = 0;
   map.addListener('zoom_changed', (e) => {
-    map.data.setStyle(styleFunc);
+    if (map.getZoom() > 12 && lastZoom <= 12) {
+      markerList.forEach((marker) => {
+        marker.setMap(map);
+      });
+      map.data.setStyle(styleFunc);
+      $('#muni_view').hide();
+    } else if (map.getZoom() <= 12 && lastZoom > 12) {
+      map.data.setStyle(styleFunc);
+      markerList.forEach((marker) => {
+        marker.setMap(null);
+      });
+      $('#muni_view').show();
+    }
+    lastZoom = map.getZoom();
   });
 
   // load all of the school names and positions
@@ -123,7 +271,7 @@ function initMap() {
         school_point = new google.maps.LatLng(lat, lng);
         school_points[id] = school_point;
         marker = new google.maps.Marker({
-          map: map,
+          map: null,
           position: school_point,
           clickable: true,
           icon: {
@@ -144,7 +292,7 @@ function initMap() {
           });
           moveLines = [];
           selectSchoolCode = id;
-          $('#autoComplete').hide();
+          $('#initial').hide();
           $('#extra, #back').show();
 
           // the school named is stored IN CAPS
@@ -181,11 +329,11 @@ function initMap() {
     });
 
     // combine markers into clusters while you are zoomed out
-    new MarkerClusterer(map, markerList, {
-      imagePath: 'lib/cluster',
-      minimumClusterSize: 3,
-      maxZoom: 14
-    });
+    // new MarkerClusterer(map, markerList, {
+    //   imagePath: 'lib/cluster',
+    //   minimumClusterSize: 3,
+    //   maxZoom: 14
+    // });
 
     // set up autocomplete to look up schools by name
     new autoComplete({
@@ -214,7 +362,7 @@ function initMap() {
           });
 
           // show content about school
-          $('#autoComplete').hide();
+          $('#initial').hide();
           $('#extra, #back').show();
           $('#school_name').text(selectSchool[0].toLowerCase());
           $('#school_rates thead').html('');
@@ -306,6 +454,9 @@ function sanitize (placename) {
   // removes accents, confused letters, common acronyms, common extra words (ciudad, centro escolar)
 
   placename = placename.toLowerCase().trim();
+  if (placename === 'nueva san salvador') {
+    placename = 'santa tecla';
+  }
   if (placename.substring(0, 3) === 'ce ') {
     placename = placename.substring(3);
   }
@@ -657,7 +808,7 @@ function back() {
   knownPerfs = {};
   knownOutcomes = {};
   $('#back, #extra').hide();
-  $('#autoComplete').show();
+  $('#initial').show();
   currentPointer.setMap(null);
   moveLines.forEach((line) => {
     line.setMap(null);
