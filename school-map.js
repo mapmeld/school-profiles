@@ -9,7 +9,9 @@ var map,
     codeLookup = {},
     paesHistory = {},
     markerList = [],
-    currentTab = 'browse';
+    labelMarkers = [],
+    currentTab = 'browse',
+    munigj;
 
 // retiros reasons have these codes
 let reasonLookup = {
@@ -37,6 +39,63 @@ let reasonLookup = {
   'V': 'Other causes'
 };
 
+let maxgrade = 0, mingrade = 1;
+
+function populateLabelMarkers() {
+  labelMarkers.forEach((marker) => {
+    marker.setMap(null);
+  });
+  munigj.features.forEach((feature) => {
+    let bounds = feature.properties.bounds,
+        minx = bounds[0],
+        maxx = bounds[1],
+        miny = bounds[2],
+        maxy = bounds[3],
+        labeler = '0',
+        selectGrade = $('#muni_grade').val(),
+        rate = feature.properties.rates[selectGrade];
+    if (rate && rate[0]) {
+      labeler = rate[1] / rate[0];
+    } else if (selectGrade == 'all') {
+      let gradeCount = 0,
+          studentRate = 0;
+      Object.keys(feature.properties.rates).forEach((grade) => {
+        if (feature.properties.rates[grade] && feature.properties.rates[grade][0]) {
+          gradeCount++;
+          studentRate += feature.properties.rates[grade][1] / feature.properties.rates[grade][0];
+        }
+      });
+      if (gradeCount) {
+        labeler = studentRate / gradeCount;
+      } else {
+        return;
+      }
+    } else {
+      return;
+    }
+    let crv = document.createElement('canvas');
+        crv.width = 40;
+        crv.height = 40;
+    let ctx = crv.getContext('2d');
+        ctx.font = '15px sans-serif';
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 3;
+        ctx.fillStyle = '#fff';
+        ctx.strokeText(Math.round(labeler * 100), 2, 20);
+        ctx.fillText(Math.round(labeler * 100), 2, 20);
+    labelMarkers.push(new google.maps.Marker({
+      map: map,
+      position: new google.maps.LatLng((miny + maxy) / 2, (minx + maxx) / 2),
+      icon: {
+        url: crv.toDataURL(),
+        size: new google.maps.Size(25, 25),
+        anchor: new google.maps.Point(12, 12)
+      },
+      clickable: false
+    }));
+  });
+}
+
 function initMap() {
   map = new google.maps.Map($('#map').get(0), {
     zoom: 9,
@@ -46,102 +105,68 @@ function initMap() {
     styles: [
       {
         "featureType": "administrative.land_parcel",
-        "stylers": [
-          {
+        "stylers": [{
             "visibility": "off"
-          }
-        ]
-      },
+          }]},
       {
         "featureType": "administrative.neighborhood",
-        "stylers": [
-          {
+        "stylers": [{
             "visibility": "off"
-          }
-        ]
-      },
+          }]},
       {
         "featureType": "landscape.natural",
         "elementType": "geometry.fill",
-        "stylers": [
-          {
+        "stylers": [{
             "color": "#f8f6f6"
-          },
-          {
+          },{
             "visibility": "on"
-          }
-        ]
-      },
+          }]},
       {
         "featureType": "landscape.natural",
         "elementType": "labels.icon",
-        "stylers": [
-          {
+        "stylers": [{
             "visibility": "off"
-          }
-        ]
-      },
+          }]},
       {
         "featureType": "poi",
         "elementType": "labels.text",
-        "stylers": [
-          {
+        "stylers": [{
             "visibility": "off"
-          }
-        ]
-      },
+          }]},
       {
         "featureType": "poi.business",
-        "stylers": [
-          {
+        "stylers": [{
             "visibility": "off"
-          }
-        ]
-      },
+          }]},
       {
         "featureType": "road",
         "elementType": "labels",
-        "stylers": [
-          {
+        "stylers": [{
             "visibility": "off"
-          }
-        ]
-      },
+          }]},
       {
         "featureType": "road",
         "elementType": "labels.icon",
-        "stylers": [
-          {
+        "stylers": [{
             "visibility": "off"
-          }
-        ]
-      },
+          }]},
       {
         "featureType": "road.highway",
         "elementType": "geometry.stroke",
-        "stylers": [
-          {
+        "stylers": [{
             "visibility": "simplified"
-          }
-        ]
-      },
+          }]},
       {
         "featureType": "transit",
-        "stylers": [
-          {
+        "stylers": [{
             "visibility": "on"
-          }
-        ]
-      },
+          }]},
       {
         "featureType": "water",
         "elementType": "labels.text",
-        "stylers": [
-          {
+        "stylers": [{
             "visibility": "off"
-          }
-        ]
-      }
+          }]}
     ]
     //mapTypeId: 'satellite'
   });
@@ -154,11 +179,10 @@ function initMap() {
       if (Object.keys(rates).length === 0) {
         selectGrade = -1;
       } else if (selectGrade === 'all') {
+        // sum up all grades
         let sum = 0, totalGrades = 0;
         Object.keys(rates).forEach((grade) => {
           if (rates[grade][0] > 0) {
-            // totalIn += rates[grade][0];
-            // totalOut += rates[grade][1];
             sum += rates[grade][1] / rates[grade][0];
             totalGrades++;
           }
@@ -174,11 +198,17 @@ function initMap() {
     }
     let fillColor = '#fff';
     if (selectGrade > 0) {
+      maxgrade = Math.max(maxgrade, selectGrade);
+      mingrade = Math.min(mingrade, selectGrade);
       let level = Math.round((selectGrade - 0.66) * 200 / 0.33) + 50;
-      fillColor = 'rgb(0, ' + level + ', 0)';
+      if (selectGrade >= 0.8) {
+        fillColor = 'rgb(0, ' + level + ', 0)';
+      } else {
+        fillColor = 'rgb(' + (selectGrade * 150) + ', ' + level + ', 0)';
+      }
     }
     return {
-      clickable: (map.getZoom() < 12 && layer.getProperty('TYPE_1') !== 'Departamento'),
+      clickable: false, // (map.getZoom() < 12 && layer.getProperty('TYPE_1') !== 'Departamento'),
       fillOpacity: ((map.getZoom() > 12 || layer.getProperty('TYPE_1') === 'Departamento') ? 0 : 0.3),
       strokeWeight: ((layer.getProperty('TYPE_1') === 'Departamento') ? 5 : 1),
       fillColor: fillColor,
@@ -188,13 +218,14 @@ function initMap() {
   map.data.setStyle(styleFunc);
   $('#muni_grade').on('change', () => {
     map.data.setStyle(styleFunc);
+    populateLabelMarkers();
   });
   d3.json('data/dept.topojson').then((dept) => {
     let deptgj = topojson.feature(dept, dept.objects.departamentos);
     map.data.addGeoJson(deptgj);
 
     d3.json('data/muni2.topojson').then((muni) => {
-      let munigj = topojson.feature(muni, muni.objects.export);
+      munigj = topojson.feature(muni, muni.objects.export);
       munigj.features.forEach((feature) => {
         let minx = 180,
             maxx = -180,
@@ -213,15 +244,16 @@ function initMap() {
         feature.properties.bounds = [minx, maxx, miny, maxy];
       });
       map.data.addGeoJson(munigj);
+      populateLabelMarkers();
     });
   });
-  map.data.addListener('click', (e) => {
-    let b = e.feature.getProperty('bounds');
-    map.fitBounds(new google.maps.LatLngBounds(
-      new google.maps.LatLng(b[2], b[0]),
-      new google.maps.LatLng(b[3], b[1])
-    ));
-  });
+  // map.data.addListener('click', (e) => {
+  //   let b = e.feature.getProperty('bounds');
+  //   map.fitBounds(new google.maps.LatLngBounds(
+  //     new google.maps.LatLng(b[2], b[0]),
+  //     new google.maps.LatLng(b[3], b[1])
+  //   ));
+  // });
 
   let lastZoom = 0;
   map.addListener('zoom_changed', (e) => {
@@ -231,12 +263,16 @@ function initMap() {
       });
       map.data.setStyle(styleFunc);
       $('#muni_view').hide();
+      labelMarkers.forEach((marker) => {
+        marker.setMap(null);
+      });
     } else if (map.getZoom() <= 12 && lastZoom > 12) {
       map.data.setStyle(styleFunc);
       markerList.forEach((marker) => {
         marker.setMap(null);
       });
       $('#muni_view').show();
+      populateLabelMarkers();
     }
     lastZoom = map.getZoom();
   });
