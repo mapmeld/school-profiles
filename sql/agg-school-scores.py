@@ -1,4 +1,5 @@
 import json
+import os
 from sys import argv
 
 import psycopg2
@@ -49,23 +50,23 @@ for geo in geo_areas["features"]:
     student_status = {}
     grades = ['01', '02', '03', '04', '05', '06', '07', '08', '1B']
     for school in cursor.fetchall():
-        try:
-            sk = json.loads(open('../data/2016/' + str(int(school[0])) + '.json', 'r').read())
-            for grade in grades:
-                if grade not in student_status:
-                    student_status[grade] = [0, 0]
-                missing_year = True
-                for check_grade in sk.keys():
-                    if sk[check_grade]["completed"] > float(sk[check_grade]["total"]) / 10.0 or sk[check_grade]["completed"] > 10:
-                        missing_year = False
-                if missing_year:
-                    #print(sk)
-                    continue
-                if grade in sk:
-                    student_status[grade][0] += sk[grade]["total"]
+        if not os.path.isfile('../data/2016/' + str(int(school[0])) + '.json'):
+            continue
+        sk = json.loads(open('../data/2016/' + str(int(school[0])) + '.json', 'r').read())
+        for grade in grades:
+            if grade not in student_status:
+                student_status[grade] = [0, 0]
+            missing_year = True
+            for check_grade in sk.keys():
+                if ("completed" in sk[check_grade]) and (sk[check_grade]["completed"] > float(sk[check_grade]["total"]) / 10.0 or sk[check_grade]["completed"] > 10):
+                    missing_year = False
+            if missing_year:
+                #print(sk)
+                continue
+            if grade in sk:
+                student_status[grade][0] += sk[grade]["total"]
+                if "completed" in sk[grade]:
                     student_status[grade][1] += sk[grade]["completed"]
-        except:
-           r = 1
         count += 1
     # if count == 0:
     #     print("No schools? " + dept + " > " + muni)

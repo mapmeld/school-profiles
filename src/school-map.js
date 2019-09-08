@@ -228,7 +228,7 @@ function initMap() {
     let deptgj = topojson.feature(dept, dept.objects.departamentos);
     map.data.addGeoJson(deptgj);
 
-    d3.json('data/muni2.topojson').then((muni) => {
+    d3.json('data/muni3.topojson').then((muni) => {
       munigj = topojson.feature(muni, muni.objects.export);
       munigj.features.forEach((feature) => {
         let minx = 180,
