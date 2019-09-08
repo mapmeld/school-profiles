@@ -11,6 +11,7 @@ app.use(bodyParser.urlencoded({extended: false}));
 
 app.use('/data', express.static(path.join(__dirname, 'data')));
 app.use('/lib', express.static(path.join(__dirname, 'lib')));
+app.use('/src', express.static(path.join(__dirname, 'src')));
 
 app.get('/', (req, res) => {
   fs.readFile('./index.html', (err, body) => {
