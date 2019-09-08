@@ -177,6 +177,7 @@ function initMap() {
       let rates = layer.getProperty('rates');
       selectGrade = $('#muni_grade').val();
       if (Object.keys(rates).length === 0) {
+        console.log('no rates for ' + layer.getProperty('NAME_2'));
         selectGrade = -1;
       } else if (selectGrade === 'all') {
         // sum up all grades
@@ -192,15 +193,18 @@ function initMap() {
         if (rates[selectGrade][0]) {
           selectGrade = rates[selectGrade][1] / rates[selectGrade][0];
         } else {
+          console.log('no students graduated select grade ' + layer.getProperty('NAME_2'));
           selectGrade = -1;
         }
       }
     }
     let fillColor = '#fff';
+    console.log(selectGrade);
     if (selectGrade > 0) {
       maxgrade = Math.max(maxgrade, selectGrade);
       mingrade = Math.min(mingrade, selectGrade);
       let level = Math.round((selectGrade - 0.66) * 200 / 0.33) + 50;
+      selectGrade = Math.max(0.45, selectGrade);
       if (selectGrade >= 0.8) {
         fillColor = 'rgb(0, ' + level + ', 0)';
       } else {

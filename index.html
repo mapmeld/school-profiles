@@ -2,145 +2,30 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>School Profiles</title>
+    <title>School Profiles Login</title>
     <link rel="stylesheet" href="//stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"/>
-    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@6.0.0/dist/css/autoComplete.min.css">
-    <link rel="stylesheet" href="map.css"/>
+    <style>
+form {
+  width: 50%;
+  margin-top: 5%;
+  margin-left: 15%;
+  padding: 5%;
+  border: 2px solid silver;
+  border-radius: 10px;
+}
+    </style>
   </head>
   <body>
-    <div id="search">
-      <h3>El Salvador Schools</h3>
-      <div id="initial">
-        <br/>
-        <h4>Schools Search</h4>
-        <input id="autoComplete" type="search" class="autocomplete"/>
-
-        <br/><br/>
-        <div id="muni_view">
-          <h4>Municipios View</h4>
-          Viewing retention rate (%) in 2016-17:
-          <br/><br/>
-          <select id="muni_grade">
-            <option value="all">All Grades</option>
-            <option value="01">Grade 1 > 2</option>
-            <option value="02">Grade 2 > 3</option>
-            <option value="03">Grade 3 > 4</option>
-            <option value="04">Grade 4 > 5</option>
-            <option value="05">Grade 5 > 6</option>
-            <option value="06">Grade 6 > 7</option>
-            <option value="07">Grade 7 > 8</option>
-            <option value="08">Grade 8 > 9</option>
-            <option value="1B">Grade 1B > 2B</option>
-          </select>
-          <br/><br/>
-          <div id="colorscale">
-            <span class="square-ish">50%</span>
-            <span class="square sq1"></span>
-            <span class="square sq2"></span>
-            <span class="square sq3"></span>
-            <span class="square sq4"></span>
-            <span class="square sq5"></span>
-            <span class="square sq6"></span>
-            <span class="square-ish">100%</span>
-          </div>
-        </div>
+    <form action="/login" method="POST">
+      <div class="form-group">
+        <label>E-mail</label>
+        <input class="form-control" type="email" name="username" placeholder="maria@example.com"/>
       </div>
-
-      <div id="extra">
-        <hr/>
-        <button id="back" onClick="back()">&larr;</button>
-        <h4 id="school_name"></h4>
-
-        <ul class="nav nav-tabs">
-          <li class="nav-item">
-            <a class="nav-link active browse-tab" href="#" onclick="setTab('browse')">Browse</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link outcomes-tab" href="#" onclick="setTab('outcomes')">Outcomes</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link programs-tab" href="#" onclick="setTab('programs')">Programs</a>
-          </li>
-        </ul>
-
-        <div id="browse-tab" class="tabpanel">
-          <span style="display: inline-block; margin-right: 10px;">Year</span>
-          <input id="year_select" type="range" min="2010" max="2017" value="2017" step="1" oninput="updateYear(event)"/>
-          <span class="year">2017</span>
-          <br/>
-          PAES <span class="paes"></span>
-          <br/><br/>
-          <table id="school_rates" class="table table-striped">
-            <thead class="thead-dark">
-            </thead>
-            <tbody>
-            </tbody>
-          </table>
-        </div>
-
-        <div id="outcomes-tab" class="tabpanel">
-          <span style="display: inline-block; margin-right: 10px;">Year</span>
-          <input id="outcome_year_select" type="range" min="2010" max="2018" value="2017" step="1" oninput="updateYear(event)"/>
-          <span class="year">2017</span>
-          <br/>
-          PAES <span class="paes"></span>
-          <br/><br/>
-          <strong>Predicted:</strong> <span id="predict_6"></span> of Grade 6, <span id="predict_1b"></span> of 1B
-          <br/>
-          <strong>Actual:</strong> <span id="retain_6"></span> of Grade 6, <span id="retain_1b"></span> of 1B
-          <!--<br/>-->
-
-          <br/><br/>
-          <div id="retiro_wrapper">
-            <table id="retiro_reasons" class="table table-striped">
-              <thead class="thead-dark">
-              </thead>
-              <tbody>
-
-              </tbody>
-            </table>
-          </div>
-
-          <!--
-          TODO: explain moves
-          -->
-        </div>
-        <div id="programs-tab" class="tabpanel">
-          TODO: Year-to-year change analysis of any interventions / programs at this school and in this community
-        </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input class="form-control" type="password" name="password" placeholder="Password"/>
       </div>
-
-      <div id="flow-modal" class="modal" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-lg" role="document">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Student flow</h5>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            <div class="modal-body">
-              TEST
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="map">
-    </div>
-
-    <script src="//code.jquery.com/jquery-3.4.1.min.js"></script>
-    <script src="//cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@6.0.0/dist/js/autoComplete.min.js"></script>
-    <script src="//stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
-
-    <script src="lib/d3.v5.min.js"></script>
-    <script src="lib/topojson.min.js"></script>
-    <script src="lib/d3-sankey.min.js"></script>
-    <script src="school-map.js"></script>
-    <script src="//developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js"></script>
-    <script async defer
-        src="//maps.googleapis.com/maps/api/js?key=AIzaSyCM5rmu5cgHp31_ykDbO-dqqCKGpfai_YM&callback=initMap">
-    </script>
+      <button type="submit" class="btn btn-primary">Log In</button>
+    </form>
   </body>
 </html>
