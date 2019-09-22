@@ -134,3 +134,6 @@ select {
   display: inline-block;
   vertical-align: middle;
 }
+#programs-tab li {
+  list-style-type: none;
+}

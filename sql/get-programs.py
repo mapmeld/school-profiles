@@ -67,7 +67,7 @@ for program_col in programs2.keys():
         year = int(row['ANIO'])
         if school_code in data_by_school and year in data_by_school[school_code] and row[program_col] is not None:
             try:
-                data_by_school[school_code][year]["laptops"] = [int(row[program_col])]
+                data_by_school[school_code][year]["laptops"] = int(row[program_col])
             except:
                 sometimes_int = 'h01e'
 

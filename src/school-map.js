@@ -4,6 +4,7 @@ var map,
     school_points = {},
     knownPerfs = {},
     knownOutcomes = {},
+    knownPrograms = {},
     moveLines = [],
     year = 2017,
     codeLookup = {},
@@ -783,10 +784,12 @@ function loadPerf (perf) {
     d3.json('data/' + year + '/retiro_' + selectSchoolCode + '.json').then((retiro) => {
       knownOutcomes[year] = retiro;
       loadRetiros(retiro);
+      loadPrograms(selectSchoolCode);
     }).catch((err) => {
       console.log(err);
       console.log('No record for this year');
       $('#retiro_reasons tbody').html('').text('No record for this year');
+      loadPrograms(selectSchoolCode);
     });
   }
 
@@ -887,6 +890,62 @@ function loadRetiros (outcomes) {
       $('#retiro_reasons tbody').append(rRow);
     }
   });
+}
+
+function loadPrograms(schoolCode) {
+  $('#programs').text('loading...');
+  $('#computers').text('loading...');
+
+  let process = (data) => {
+    // named programs
+    let usedPrograms = $('<ul>');
+    let formatRange = (years) => {
+      if (years.length === 1) {
+        return years[0];
+      } else {
+        return years.join('-');
+      }
+    };
+    if (data.leche) { usedPrograms.append($('<li>Leche (' + formatRange(data.leche) + ')</li>')) }
+    if (data.paquete) { usedPrograms.append($('<li>Paquetes Escolares (' + formatRange(data.paquete) + ')</li>')) }
+    if (data.parents) { usedPrograms.append($('<li>Padres y madres (' + formatRange(data.parents) + ')</li>')) }
+    $('#programs').html(usedPrograms.length ?
+        usedPrograms
+        : 'None from set')
+
+    // laptops (when not just y/n)
+    $('#computers').text('No record');
+    let laptops = [];
+    Object.keys(data).forEach((year) => {
+      if (!isNaN(1 * year)) {
+        // actually a year
+        if (data[year]["laptops"]) {
+          if (data[year]["laptops"] > 1) {
+            laptops.push(year + ': ' + data[year]["laptops"].toLocaleString());
+          } else if (data[year]["laptops"] === 1) {
+            laptops.push(year + ': ' + 'yes');
+          }
+        }
+      }
+    });
+    if (laptops.length) {
+      $('#computers').text(laptops.join(', '));
+    }
+  };
+  if (!knownPrograms[schoolCode]) {
+    d3.json('data/programs/' + schoolCode + '.json').then((d) => {
+      knownPrograms[schoolCode] = d;
+      process(d);
+    })
+    .catch((err) => {
+      $('#computers').text('No record');
+      $('#programs').text('No record');
+      console.error(err);
+      console.log('Programs not found');
+    });
+  } else {
+    process(knownPrograms[schoolCode]);
+  }
 }
 
 // UI: return to the starting search panel
