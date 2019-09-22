@@ -40,5 +40,5 @@ for year in years:
     if prevSchool is not None:
         # record the old school
         jout = open('../data/' + str(year) + '/move_' + school + '.json', 'w')
-        jout.write(json.dumps(knownSchool))
+        jout.write(json.dumps(knownSchool, separators=(',', ':')))
         jout.close()

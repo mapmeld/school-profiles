@@ -33,6 +33,6 @@ for year in years:
     for school in data_by_school.keys():
         if school is not None:
             op = open('data/' + str(year) + '/retiro_' + school + '.json', 'w')
-            op.write(json.dumps(data_by_school[school]))
+            op.write(json.dumps(data_by_school[school], separators=(',', ':')))
 
 conn.close()

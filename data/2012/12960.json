@@ -1,1 +1,1 @@
-{"01": {"total": 8, "completed": 4}, "02": {"total": 14, "completed": 4, "repeated": 3}, "03": {"total": 13, "completed": 6, "repeated": 1}, "04": {"total": 11, "completed": 9}, "05": {"total": 20, "completed": 18}, "06": {"total": 9, "completed": 1, "moved": 1}}
+{"01":{"total":8,"completed":4},"02":{"total":14,"completed":4,"repeated":3},"03":{"total":13,"completed":6,"repeated":1},"04":{"total":11,"completed":9},"05":{"total":20,"completed":18},"06":{"total":9,"completed":1,"moved":1}}

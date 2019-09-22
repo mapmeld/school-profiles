@@ -72,4 +72,4 @@ for geo in geo_areas["features"]:
     #     print("No schools? " + dept + " > " + muni)
     geo["properties"]["rates"] = student_status
 exp = open('export.geojson', 'w')
-exp.write(json.dumps(geo_areas))
+exp.write(json.dumps(geo_areas, separators=(',', ':')))
