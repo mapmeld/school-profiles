@@ -80,6 +80,13 @@ function populateLabelMarkers() {
   });
 }
 
+function toggleMovesMapped() {
+  // show/hide movement lines on the map
+  moveLines.forEach((line) => {
+    line.setMap($("#movesMapped").prop("checked") ? map : null);
+  });
+}
+
 function initMap() {
   map = new google.maps.Map($('#map').get(0), {
     zoom: 9,
@@ -747,7 +754,7 @@ function loadPerf (perf) {
           // create a line showing students moving away from this school
           moveLines.push(
             new google.maps.Polyline({
-              map: map,
+              map: $("#movesMapped").prop("checked") ? map : null,
               clickable: false,
               geodesic: true,
               path: [

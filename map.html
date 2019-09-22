@@ -70,6 +70,11 @@
           <br/>
           PAES <span class="paes"></span>
           <br/><br/>
+          <label class="checkbox">
+            <input id="movesMapped" type="checkbox" onChange="toggleMovesMapped()"/>
+            <span>Map movement</span>
+          </label>
+          <br/>
           <table id="school_rates" class="table table-striped">
             <thead class="thead-dark">
             </thead>
@@ -88,7 +93,6 @@
           <strong>Predicted:</strong> <span id="predict_6"></span> of Grade 6, <span id="predict_1b"></span> of 1B
           <br/>
           <strong>Actual:</strong> <span id="retain_6"></span> of Grade 6, <span id="retain_1b"></span> of 1B
-          <!--<br/>-->
 
           <br/><br/>
           <div id="retiro_wrapper">
@@ -101,12 +105,13 @@
             </table>
           </div>
 
-          <!--
-          TODO: explain moves
-          -->
         </div>
         <div id="programs-tab" class="tabpanel">
-          TODO: Year-to-year change analysis of any interventions / programs at this school and in this community
+          Programs: <span id="programs">loading...</span>
+          <br/>
+          Computers: <span id="computers">loading...</span>
+          <div id="chart">
+          </div>
         </div>
       </div>
 
