@@ -908,7 +908,7 @@ function loadPrograms(schoolCode) {
     };
     if (data.leche) { usedPrograms.append($('<li>Leche (' + formatRange(data.leche) + ')</li>')) }
     if (data.paquete) { usedPrograms.append($('<li>Paquetes Escolares (' + formatRange(data.paquete) + ')</li>')) }
-    if (data.parents) { usedPrograms.append($('<li>Padres y madres (' + formatRange(data.parents) + ')</li>')) }
+    //if (data.parents) { usedPrograms.append($('<li>Padres y madres (' + formatRange(data.parents) + ')</li>')) }
     $('#programs').html(usedPrograms.length ?
         usedPrograms
         : 'None from set')
