@@ -137,3 +137,6 @@ select {
 #programs-tab li {
   list-style-type: none;
 }
+#chart {
+  max-height: 250px;
+}

@@ -780,6 +780,7 @@ function loadPerf (perf) {
   // if not, we load the file and sent it to loadRetiros
   if (knownOutcomes[year]) {
     loadRetiros(knownOutcomes[year]);
+    loadPrograms(selectSchoolCode);
   } else {
     d3.json('data/' + year + '/retiro_' + selectSchoolCode + '.json').then((retiro) => {
       knownOutcomes[year] = retiro;
@@ -908,17 +909,25 @@ function loadPrograms(schoolCode) {
     };
     if (data.leche) { usedPrograms.append($('<li>Leche (' + formatRange(data.leche) + ')</li>')) }
     if (data.paquete) { usedPrograms.append($('<li>Paquetes Escolares (' + formatRange(data.paquete) + ')</li>')) }
-    //if (data.parents) { usedPrograms.append($('<li>Padres y madres (' + formatRange(data.parents) + ')</li>')) }
+    if (data.parents) { usedPrograms.append($('<li>Padres y madres (' + formatRange(data.parents) + ')</li>')) }
     $('#programs').html(usedPrograms.length ?
         usedPrograms
         : 'None from set')
 
     // laptops (when not just y/n)
     $('#computers').text('No record');
-    let laptops = [];
+    let laptops = [],
+        yearEnrollment = [[], [], [], []],
+        years = [];
     Object.keys(data).forEach((year) => {
+      // verify key is a year
       if (!isNaN(1 * year)) {
-        // actually a year
+        years.push(year * 1);
+        yearEnrollment[0].push((data[year]["1"] || {}).total * 1);
+        yearEnrollment[1].push((data[year]["2"] || {}).total * 1);
+        yearEnrollment[2].push((data[year]["3"] || {}).total * 1);
+        yearEnrollment[3].push((data[year]["4"] || {}).total * 1);
+
         if (data[year]["laptops"]) {
           if (data[year]["laptops"] > 1) {
             laptops.push(year + ': ' + data[year]["laptops"].toLocaleString());
@@ -928,6 +937,26 @@ function loadPrograms(schoolCode) {
         }
       }
     });
+
+    if (years.length) {
+      c3.generate({
+        bindTo: '#chart',
+        data: {
+          x: 'Year',
+          columns: [
+            ['Year'].concat(years),
+            ['Grade 1'].concat(yearEnrollment[0]),
+            ['Grade 2'].concat(yearEnrollment[1]),
+            ['Grade 3'].concat(yearEnrollment[2]),
+            ['Grade 4'].concat(yearEnrollment[3])
+          ]
+        },
+        axis: { y: { tick: { format: d3.format("d") } } }
+      });
+    } else {
+      $('#chart').html('No enrollment');
+    }
+
     if (laptops.length) {
       $('#computers').text(laptops.join(', '));
     }
@@ -940,6 +969,7 @@ function loadPrograms(schoolCode) {
     .catch((err) => {
       $('#computers').text('No record');
       $('#programs').text('No record');
+      $('#chart').html('No record');
       console.error(err);
       console.log('Programs not found');
     });
