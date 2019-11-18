@@ -103,24 +103,6 @@ select {
   width: 12px;
   opacity: 0.5;
 }
-#colorscale .sq1 { /* 0.5 */
-  background-color: rgb(75, 0, 0)
-}
-#colorscale .sq2 { /* 0.6 */
-  background-color: rgb(75, 14, 0)
-}
-#colorscale .sq3 { /* 0.7 */
-  background-color: rgb(75, 74, 0)
-}
-#colorscale .sq4 { /* 0.8 */
-  background-color: rgb(0, 135, 0)
-}
-#colorscale .sq5 { /* 0.9 */
-  background-color: rgb(0, 195, 0)
-}
-#colorscale .sq6 { /* 1.0 */
-  background-color: rgb(0, 255, 0)
-}
 .checkbox {
   cursor: pointer;
   user-select: none;

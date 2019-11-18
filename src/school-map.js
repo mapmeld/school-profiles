@@ -12,7 +12,8 @@ var map,
     markerList = [],
     labelMarkers = [],
     currentTab = 'browse',
-    munigj;
+    munigj,
+    deptgj;
 
 // add a number label on each municipio
 // removed when you zoom in too far
@@ -24,7 +25,7 @@ function populateLabelMarkers() {
     marker.setMap(null);
   });
 
-  munigj.features.forEach((feature) => {
+  let labelFeature = (feature) => {
     let bounds = feature.properties.bounds,
         minx = bounds[0],
         maxx = bounds[1],
@@ -78,7 +79,13 @@ function populateLabelMarkers() {
       },
       clickable: false
     }));
-  });
+  };
+
+  if (map.getZoom() > 10) {
+    munigj.features.forEach(labelFeature);
+  } else {
+    deptgj.features.forEach(labelFeature);
+  }
 }
 
 function toggleMovesMapped() {
@@ -87,6 +94,25 @@ function toggleMovesMapped() {
     line.setMap($("#movesMapped").prop("checked") ? map : null);
   });
 }
+
+function getColor(selectGrade) {
+  let level = Math.round((selectGrade - 0.66) * 240 / 0.33) + 50;
+  selectGrade = Math.max(0.45, selectGrade);
+
+  // actual color for muni set here
+  if (selectGrade >= 0.8) {
+    fillColor = 'rgb(50, ' + level + ', 30)';
+  } else {
+    fillColor = 'rgb(' + (level + 10) + ',' + level + ', 10)';
+  }
+  return fillColor;
+}
+// fill color square key on map page
+[0.49, 0.59, 0.69, 0.79, 0.89, 0.99].forEach(function (percent, index) {
+  $("#colorscale .sq" + (index+1)).css({
+    backgroundColor: getColor(percent)
+  });
+});
 
 function initMap() {
   map = new google.maps.Map($('#map').get(0), {
@@ -170,54 +196,57 @@ function initMap() {
   // municipios color-coding goes transparent when we zoom in
   // the muni numbers are calculated in sql/agg-school-scores.py
   let styleFunc = (layer) => {
-    let selectGrade = -1;
-    if (layer.getProperty('TYPE_1') !== 'Departamento') {
-      let rates = layer.getProperty('rates');
-      selectGrade = $('#muni_grade').val();
+    let selectGrade = $('#muni_grade').val();
 
-      // do we have recorded rates for this muni?
-      if (Object.keys(rates).length === 0) {
-        // console.log('no rates for ' + layer.getProperty('NAME_2'));
-        selectGrade = -1;
-      } else if (selectGrade === 'all') {
-        // sum up all grades
-        let sum = 0, totalGrades = 0;
-        Object.keys(rates).forEach((grade) => {
-          if (rates[grade][0] > 0) {
-            sum += rates[grade][1] / rates[grade][0];
-            totalGrades++;
-          }
-        });
-        selectGrade = sum / totalGrades;
-      } else {
-        // look up graduation for this municipio, if available
-        if (rates[selectGrade][0]) {
-          selectGrade = rates[selectGrade][1] / rates[selectGrade][0];
-        } else {
-          // console.log('no students graduated select grade ' + layer.getProperty('NAME_2'));
-          selectGrade = -1;
+    let rates = layer.getProperty('rates') || {};
+
+    // do we have recorded rates for this muni?
+    if (Object.keys(rates).length === 0) {
+      console.log('no rates for ' + layer.getProperty('NAME_2'));
+      selectGrade = -1;
+    } else if (selectGrade === 'all') {
+      // sum up all grades
+      let sum = 0, totalGrades = 0;
+      Object.keys(rates).forEach((grade) => {
+        if (rates[grade][0] > 0) {
+          sum += rates[grade][1] / rates[grade][0];
+          totalGrades++;
         }
+      });
+      selectGrade = sum / totalGrades;
+    } else {
+      // look up graduation for this municipio, if available
+      if (rates[selectGrade][0]) {
+        selectGrade = rates[selectGrade][1] / rates[selectGrade][0];
+      } else {
+        // console.log('no students graduated select grade ' + layer.getProperty('NAME_2'));
+        selectGrade = -1;
       }
     }
+
     let fillColor = '#fff';
     // console.log(selectGrade);
     if (selectGrade > 0) {
       maxgrade = Math.max(maxgrade, selectGrade);
       mingrade = Math.min(mingrade, selectGrade);
-      let level = Math.round((selectGrade - 0.66) * 200 / 0.33) + 50;
-      selectGrade = Math.max(0.45, selectGrade);
-
-      // actual color for muni set here
-      if (selectGrade >= 0.8) {
-        fillColor = 'rgb(0, ' + level + ', 0)';
-      } else {
-        fillColor = 'rgb(' + (selectGrade * 150) + ', ' + level + ', 0)';
-      }
+      fillColor = getColor(selectGrade);
     }
     return {
       clickable: false, // (map.getZoom() < 12 && layer.getProperty('TYPE_1') !== 'Departamento'),
-      fillOpacity: ((map.getZoom() > 12 || layer.getProperty('TYPE_1') === 'Departamento') ? 0 : 0.3),
-      strokeWeight: ((layer.getProperty('TYPE_1') === 'Departamento') ? 5 : 1),
+      fillOpacity: (
+        (
+          (layer.getProperty('TYPE_1') === 'Departamento' && map.getZoom() > 10)
+          || (layer.getProperty('TYPE_1') !== 'Departamento' && map.getZoom() <= 10)
+          || (map.getZoom() > 12)
+        )
+          ? 0 // depto OR muni at wrong zoom
+          : 0.3 // depto or muni at right zoom
+      ),
+      strokeWeight: (
+        (layer.getProperty('TYPE_1') === 'Departamento')
+          ? 5 // depto
+          : 0.5 // muni
+      ),
       fillColor: fillColor,
       strokeOpacity: 0.5
     };
@@ -230,33 +259,36 @@ function initMap() {
     populateLabelMarkers();
   });
 
+  let addBounds = (feature) => {
+    // find bounds for each dept and muni
+    let minx = 180,
+        maxx = -180,
+        miny = 90,
+        maxy = -90;
+    feature.geometry.coordinates.forEach((shape) => {
+      shape.forEach((ring) => {
+        ring.forEach((point) => {
+          minx = Math.min(minx, point[0]);
+          maxx = Math.max(maxx, point[0]);
+          miny = Math.min(miny, point[1]);
+          maxy = Math.max(maxy, point[1]);
+        });
+      });
+    });
+    feature.properties.bounds = [minx, maxx, miny, maxy];
+  };
+
   d3.json('data/dept.topojson').then((dept) => {
-    let deptgj = topojson.feature(dept, dept.objects.departamentos);
+    deptgj = topojson.feature(dept, dept.objects.departamentos);
+    deptgj.features.forEach(addBounds);
     map.data.addGeoJson(deptgj);
 
     d3.json('data/muni3.topojson').then((muni) => {
       munigj = topojson.feature(muni, muni.objects.export);
-      munigj.features.forEach((feature) => {
-        // find bounds for each muni
-        let minx = 180,
-            maxx = -180,
-            miny = 90,
-            maxy = -90;
-        feature.geometry.coordinates.forEach((shape) => {
-          shape.forEach((ring) => {
-            ring.forEach((point) => {
-              minx = Math.min(minx, point[0]);
-              maxx = Math.max(maxx, point[0]);
-              miny = Math.min(miny, point[1]);
-              maxy = Math.max(maxy, point[1]);
-            });
-          });
-        });
-        feature.properties.bounds = [minx, maxx, miny, maxy];
-      });
+      munigj.features.forEach(addBounds);
       map.data.addGeoJson(munigj);
 
-      // draw numbers on top of muni
+      // draw numbers on top of dept and muni
       populateLabelMarkers();
     });
   });
@@ -273,7 +305,7 @@ function initMap() {
   // update muni transparency and visible markers, when you zoom < or > zoom level 12
   let lastZoom = 0;
   map.addListener('zoom_changed', (e) => {
-    if (map.getZoom() > 12 && lastZoom <= 12) {
+    if (map.getZoom() > 12 && (lastZoom <= 12 || lastZoom <= 10)) {
       markerList.forEach((marker) => {
         marker.setMap(map);
       });
@@ -282,7 +314,14 @@ function initMap() {
       labelMarkers.forEach((marker) => {
         marker.setMap(null);
       });
-    } else if (map.getZoom() <= 12 && lastZoom > 12) {
+    } else if (map.getZoom() <= 12 && (lastZoom > 12 || lastZoom <= 10)) {
+      map.data.setStyle(styleFunc);
+      markerList.forEach((marker) => {
+        marker.setMap(null);
+      });
+      $('#muni_view').show();
+      populateLabelMarkers();
+    } else if (map.getZoom() <= 10 && lastZoom > 10) {
       map.data.setStyle(styleFunc);
       markerList.forEach((marker) => {
         marker.setMap(null);
