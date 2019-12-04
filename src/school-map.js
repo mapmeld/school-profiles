@@ -968,11 +968,7 @@ function loadPrograms(schoolCode) {
         yearEnrollment[3].push((data[year]["4"] || {}).total * 1);
 
         if (data[year]["laptops"]) {
-          if (data[year]["laptops"] > 1) {
-            laptops.push(year + ': ' + data[year]["laptops"].toLocaleString());
-          } else if (data[year]["laptops"] === 1) {
-            laptops.push(year + ': ' + 'yes');
-          }
+          laptops.push(year + ': ' + data[year]["laptops"].toLocaleString());
         }
       }
     });
